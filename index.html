@@ -31,6 +31,7 @@
       if (gameState === STATE.PLAYING) {
         roadOffset += player.scrollSpeed * dt;
         updatePlayer(dt);
+        updateObstacles(dt);
         if (player.progress >= 1) endDay(true);
       }
     }
@@ -133,6 +134,111 @@
       ctx.setLineDash([]);
     }
 
+    // 障礙物繪製函式
+    function drawCar(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(x + 4, y + 6, w - 8, 10);
+      ctx.fillRect(x + 4, y + h - 16, w - 8, 10);
+      ctx.fillStyle = '#888';
+      ctx.fillRect(x, y + 8, 4, 8);
+      ctx.fillRect(x + w - 4, y + 8, 4, 8);
+      ctx.fillRect(x, y + h - 16, 4, 8);
+      ctx.fillRect(x + w - 4, y + h - 16, 4, 8);
+    }
+
+    function drawPothole(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(x + w/2, y + h/2, w/2, h/2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3e2723';
+      ctx.beginPath();
+      ctx.ellipse(x + w/2, y + h/2, w/3, h/3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawStall(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('路邊攤', x + w/2, y + h/2 + 4);
+    }
+
+    function drawConstruction(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = i % 2 === 0 ? '#f39c12' : '#fff';
+        ctx.fillRect(x + i * (w/4) + 4, y + 4, 12, 20);
+      }
+    }
+
+    function drawGenericObstacle(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    // 靜態障礙物定義
+    const OBSTACLE_TYPES = {
+      illegally_parked: {
+        label: '違停車', w: 32, h: 48,
+        color: '#c0392b', draw: drawCar,
+        static: true, damage: 1,
+      },
+      pothole: {
+        label: '坑洞', w: 20, h: 20,
+        color: '#5d4037', draw: drawPothole,
+        static: true, damage: 1,
+      },
+      food_stall: {
+        label: '路邊攤', w: 40, h: 32,
+        color: '#e67e22', draw: drawStall,
+        static: true, damage: 0, slowZone: true,
+      },
+      construction: {
+        label: '施工', w: 80, h: 40,
+        color: '#f39c12', draw: drawConstruction,
+        static: true, damage: 0, blockLanes: 2,
+      },
+    };
+    const SPAWN_INTERVAL = 1.2;
+
+    function spawnObstacle() {
+      const types = Object.keys(OBSTACLE_TYPES);
+      const type = types[Math.floor(Math.random() * types.length)];
+      const def = OBSTACLE_TYPES[type];
+      const lane = Math.floor(Math.random() * LANE_COUNT);
+      const lx = ROAD_LEFT + lane * LANE_WIDTH + (LANE_WIDTH - def.w) / 2;
+      obstacles.push({
+        type, x: lx, y: -def.h - 10,
+        w: def.w, h: def.h,
+        color: def.color,
+        draw: def.draw,
+        damage: def.damage,
+        vy: 0,
+      });
+    }
+
+    function updateObstacles(dt) {
+      spawnTimer += dt;
+      if (spawnTimer >= SPAWN_INTERVAL) {
+        spawnTimer = 0;
+        spawnObstacle();
+      }
+      obstacles.forEach(o => {
+        o.y += player.scrollSpeed * dt;
+      });
+      obstacles = obstacles.filter(o => o.y < H + 60);
+    }
+
+    function renderObstacles() {
+      obstacles.forEach(o => o.draw(o.x, o.y, o.w, o.h, o.color));
+    }
+
     function renderTitle() {
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, W, H);
@@ -199,7 +305,7 @@
       ctx.fillRect(0, 0, W, H);
       if (gameState === STATE.TITLE)    renderTitle();
       if (gameState === STATE.BRIEFING) renderBriefing();
-      if (gameState === STATE.PLAYING)  { renderRoad(); renderPlayer(); }
+      if (gameState === STATE.PLAYING)  { renderRoad(); renderObstacles(); renderPlayer(); }
     }
 
     let lastTime = 0;
