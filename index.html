@@ -28,7 +28,11 @@
     let totalScore = 0;
 
     function update(dt) {
-      // 後續各 task 填入
+      if (gameState === STATE.PLAYING) {
+        roadOffset += player.scrollSpeed * dt;
+        updatePlayer(dt);
+        if (player.progress >= 1) endDay(true);
+      }
     }
 
     const DAYS = [
@@ -40,6 +44,27 @@
     ];
     const WEATHER_EMOJI = { sunny: '☀️', rainy: '🌧️', foggy: '🌫️' };
     const WEATHER_NAME  = { sunny: '晴天', rainy: '雨天', foggy: '起霧' };
+
+    let player = {
+      x: W / 2 - 8,
+      y: H - 140,
+      w: 16, h: 24,
+      vx: 0, vy: 0,
+      speed: 180,
+      baseScrollSpeed: 120,
+      scrollSpeed: 120,
+      hp: 3,
+      maxHp: 3,
+      invincible: 0,
+      score: 0,
+      progress: 0,
+      totalDistance: 3000,
+      distanceTravelled: 0,
+    };
+
+    let obstacles = [];
+    let spawnTimer = 0;
+    let roadOffset = 0;
 
     const keys = {};
     document.addEventListener('keydown', e => {
@@ -61,6 +86,51 @@
       ctx.fillRect(x + P, y + P * 5, P * 2, P);
       ctx.fillStyle = '#ff0';
       ctx.fillRect(x + P * 3, y + P, P, P);
+    }
+
+    function updatePlayer(dt) {
+      const day = DAYS[currentDay - 1];
+      const isRainy = day.weather === 'rainy';
+      const friction = isRainy ? 0.85 : 0.75;
+
+      if (keys['ArrowLeft'])  player.vx -= player.speed * dt * 8;
+      if (keys['ArrowRight']) player.vx += player.speed * dt * 8;
+      player.vx *= friction;
+      player.vx = Math.max(-player.speed, Math.min(player.speed, player.vx));
+      player.x += player.vx * dt;
+      player.x = Math.max(ROAD_LEFT, Math.min(ROAD_RIGHT - player.w, player.x));
+
+      if (keys['ArrowUp'])   player.scrollSpeed = Math.min(240, player.scrollSpeed + 60 * dt);
+      if (keys['ArrowDown']) player.scrollSpeed = Math.max(60,  player.scrollSpeed - 80 * dt);
+      else player.scrollSpeed += (player.baseScrollSpeed - player.scrollSpeed) * dt * 2;
+
+      player.distanceTravelled += player.scrollSpeed * dt;
+      player.progress = Math.min(1, player.distanceTravelled / player.totalDistance);
+
+      if (player.invincible > 0) player.invincible -= dt;
+    }
+
+    function renderPlayer() {
+      if (player.invincible > 0 && Math.floor(player.invincible * 8) % 2 === 0) return;
+      drawBike(player.x, player.y, '#4af');
+    }
+
+    function renderRoad() {
+      ctx.fillStyle = '#2d5a1b';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#444';
+      ctx.fillRect(ROAD_LEFT, 0, ROAD_RIGHT - ROAD_LEFT, H);
+      ctx.setLineDash([20, 20]);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      for (let i = 1; i < LANE_COUNT; i++) {
+        const lx = ROAD_LEFT + i * LANE_WIDTH;
+        ctx.beginPath();
+        ctx.moveTo(lx, -20 + (roadOffset % 40));
+        ctx.lineTo(lx, H);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
     }
 
     function renderTitle() {
@@ -112,13 +182,24 @@
 
     function startDay() {
       gameState = STATE.PLAYING;
+      player.x = W / 2 - 8;
+      player.hp = player.maxHp;
+      player.score = 0;
+      player.distanceTravelled = 0;
+      player.progress = 0;
+      player.scrollSpeed = player.baseScrollSpeed;
+      player.invincible = 0;
+      roadOffset = 0;
+      obstacles = [];
+      spawnTimer = 0;
     }
 
     function render() {
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(0, 0, W, H);
-      if (gameState === STATE.TITLE) renderTitle();
+      if (gameState === STATE.TITLE)    renderTitle();
       if (gameState === STATE.BRIEFING) renderBriefing();
+      if (gameState === STATE.PLAYING)  { renderRoad(); renderPlayer(); }
     }
 
     let lastTime = 0;
