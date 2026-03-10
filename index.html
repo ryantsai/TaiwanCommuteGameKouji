@@ -74,6 +74,19 @@
       if (e.code === 'Enter') {
         if (gameState === STATE.TITLE) gameState = STATE.BRIEFING;
         else if (gameState === STATE.BRIEFING) startDay();
+        else if (gameState === STATE.RESULT) {
+          if (currentDay >= 5) {
+            gameState = STATE.ENDING;
+          } else {
+            currentDay++;
+            gameState = STATE.BRIEFING;
+          }
+        }
+        else if (gameState === STATE.ENDING) {
+          currentDay = 1;
+          totalScore = 0;
+          gameState = STATE.TITLE;
+        }
       }
     });
     document.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -438,6 +451,35 @@
       }
     }
 
+    function renderResult() {
+  ctx.fillStyle = '#0d1b2a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = dayResult.success ? '#2ecc71' : '#e74c3c';
+  ctx.font = 'bold 32px monospace';
+  ctx.fillText(dayResult.success ? '平安抵達！' : '遲到了...', W / 2, 160);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '18px monospace';
+  ctx.fillText(`今日得分：${dayResult.dayScore > 0 ? '+' : ''}${dayResult.dayScore}`, W / 2, 240);
+  ctx.fillText(`累計總分：${totalScore}`, W / 2, 280);
+
+  const comments = dayResult.success
+    ? ['順利通勤，繼續加油！', '技術高超！', '完美閃避！']
+    : ['唉，又遲到了...', '老闆要扣薪水了', '明天加油！'];
+  ctx.fillStyle = '#aaa';
+  ctx.font = '14px monospace';
+  ctx.fillText(comments[Math.floor(Date.now() / 3000) % comments.length], W / 2, 340);
+
+  if (Math.floor(Date.now() / 500) % 2 === 0) {
+    ctx.fillStyle = '#4af';
+    ctx.font = '16px monospace';
+    const isLastDay = currentDay >= 5;
+    ctx.fillText(isLastDay ? '按 Enter 看結局' : '按 Enter 繼續', W / 2, 480);
+  }
+}
+
     function renderTitle() {
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, W, H);
@@ -506,6 +548,7 @@
       if (gameState === STATE.TITLE)    renderTitle();
       if (gameState === STATE.BRIEFING) renderBriefing();
       if (gameState === STATE.PLAYING)  { renderRoad(); renderObstacles(); renderPlayer(); renderHUD(); }
+      if (gameState === STATE.RESULT)   renderResult();
     }
 
     let lastTime = 0;
