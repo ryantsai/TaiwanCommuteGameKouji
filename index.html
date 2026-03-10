@@ -31,11 +31,22 @@
       // 後續各 task 填入
     }
 
+    const DAYS = [
+      { name: '星期一', weather: 'sunny',  events: ['施工區域', '行人特別多'] },
+      { name: '星期二', weather: 'rainy',  events: ['違停嚴重', '路面溼滑'] },
+      { name: '星期三', weather: 'foggy',  events: ['大霧警報', '能見度低'] },
+      { name: '星期四', weather: 'sunny',  events: ['警察取締', '救護車出勤'] },
+      { name: '星期五', weather: 'rainy',  events: ['超級塞車', '全力衝刺！'] },
+    ];
+    const WEATHER_EMOJI = { sunny: '☀️', rainy: '🌧️', foggy: '🌫️' };
+    const WEATHER_NAME  = { sunny: '晴天', rainy: '雨天', foggy: '起霧' };
+
     const keys = {};
     document.addEventListener('keydown', e => {
       keys[e.code] = true;
-      if (e.code === 'Enter' && gameState === STATE.TITLE) {
-        gameState = STATE.BRIEFING;
+      if (e.code === 'Enter') {
+        if (gameState === STATE.TITLE) gameState = STATE.BRIEFING;
+        else if (gameState === STATE.BRIEFING) startDay();
       }
     });
     document.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -71,10 +82,43 @@
       drawBike(W / 2 - 8, 300, '#4af');
     }
 
+    function renderBriefing() {
+      const day = DAYS[currentDay - 1];
+      ctx.fillStyle = '#0d1b2a';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#4af';
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`第 ${currentDay} 天 — ${day.name}`, W / 2, 100);
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px monospace';
+      ctx.fillText(`天氣：${WEATHER_EMOJI[day.weather]} ${WEATHER_NAME[day.weather]}`, W / 2, 180);
+      ctx.fillStyle = '#fa0';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('今日注意事項', W / 2, 260);
+      ctx.fillStyle = '#ccc';
+      ctx.font = '14px monospace';
+      day.events.forEach((e, i) => {
+        ctx.fillText(`• ${e}`, W / 2, 300 + i * 28);
+      });
+      ctx.fillStyle = '#aaa';
+      ctx.font = '14px monospace';
+      ctx.fillText(`總分：${totalScore}`, W / 2, 500);
+      if (Math.floor(Date.now() / 500) % 2 === 0) {
+        ctx.fillStyle = '#4af';
+        ctx.fillText('按 Enter 出發！', W / 2, 560);
+      }
+    }
+
+    function startDay() {
+      gameState = STATE.PLAYING;
+    }
+
     function render() {
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(0, 0, W, H);
       if (gameState === STATE.TITLE) renderTitle();
+      if (gameState === STATE.BRIEFING) renderBriefing();
     }
 
     let lastTime = 0;
