@@ -33,6 +33,8 @@
         updatePlayer(dt);
         updateObstacles(dt);
         checkCollisions();
+        const currentDay_data = DAYS[currentDay - 1];
+        if (currentDay_data.weather === 'rainy') updateRain(dt);
         if (player.progress >= 1) endDay(true);
       }
     }
@@ -392,6 +394,47 @@
       dayResult = { success, dayScore };
     }
 
+    let raindrops = [];
+
+    function initRain() {
+      raindrops = [];
+      for (let i = 0; i < 80; i++) {
+        raindrops.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          speed: 300 + Math.random() * 200,
+          len: 8 + Math.random() * 8,
+        });
+      }
+    }
+
+    function updateRain(dt) {
+      raindrops.forEach(r => {
+        r.y += r.speed * dt;
+        if (r.y > H) { r.y = -r.len; r.x = Math.random() * W; }
+      });
+    }
+
+    function renderRain() {
+      ctx.strokeStyle = 'rgba(120,180,255,0.5)';
+      ctx.lineWidth = 1;
+      raindrops.forEach(r => {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 2, r.y + r.len);
+        ctx.stroke();
+      });
+    }
+
+    function renderFog() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, H);
+      gradient.addColorStop(0, 'rgba(200,200,200,0.85)');
+      gradient.addColorStop(0.4, 'rgba(200,200,200,0.6)');
+      gradient.addColorStop(0.7, 'rgba(200,200,200,0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, W, H);
+    }
+
     let noGPS = false;
 
     function renderHUD() {
@@ -540,6 +583,8 @@
       obstacles = [];
       spawnTimer = 0;
       dynamicSpawnTimer = 0;
+      const day = DAYS[currentDay - 1];
+      if (day.weather === 'rainy') initRain();
     }
 
     function render() {
@@ -547,7 +592,15 @@
       ctx.fillRect(0, 0, W, H);
       if (gameState === STATE.TITLE)    renderTitle();
       if (gameState === STATE.BRIEFING) renderBriefing();
-      if (gameState === STATE.PLAYING)  { renderRoad(); renderObstacles(); renderPlayer(); renderHUD(); }
+      if (gameState === STATE.PLAYING)  {
+        renderRoad();
+        renderObstacles();
+        renderPlayer();
+        const _day = DAYS[currentDay - 1];
+        if (_day.weather === 'rainy') renderRain();
+        if (_day.weather === 'foggy') renderFog();
+        renderHUD();
+      }
       if (gameState === STATE.RESULT)   renderResult();
     }
 
