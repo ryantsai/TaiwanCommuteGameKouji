@@ -32,6 +32,7 @@
         roadOffset += player.scrollSpeed * dt;
         updatePlayer(dt);
         updateObstacles(dt);
+        checkCollisions();
         if (player.progress >= 1) endDay(true);
       }
     }
@@ -325,6 +326,57 @@
 
     function renderObstacles() {
       obstacles.forEach(o => o.draw(o.x, o.y, o.w, o.h, o.color));
+    }
+
+    function aabb(a, b) {
+      return a.x < b.x + b.w &&
+             a.x + a.w > b.x &&
+             a.y < b.y + b.h &&
+             a.y + a.h > b.y;
+    }
+
+    function checkCollisions() {
+      if (player.invincible > 0) return;
+
+      obstacles.forEach(o => {
+        if (!aabb(player, o)) return;
+
+        if (o.slowPlayer) {
+          player.scrollSpeed = Math.max(40, player.scrollSpeed * 0.5);
+          obstacles = obstacles.filter(ob => ob !== o);
+          return;
+        }
+
+        if (o.damage > 0) {
+          player.hp -= o.damage;
+          player.invincible = 1.5;
+          player.score -= 20;
+          totalScore -= 20;
+          player.vx = (player.x > o.x + o.w / 2) ? 120 : -120;
+          obstacles = obstacles.filter(ob => ob !== o);
+
+          if (player.hp <= 0) {
+            endDay(false);
+          }
+        }
+      });
+    }
+
+    let dayResult = null;
+
+    function endDay(success) {
+      gameState = STATE.RESULT;
+      let dayScore = 0;
+      if (success) {
+        dayScore += 100;
+        const timeBonus = Math.floor((1 - player.distanceTravelled / (player.totalDistance * 1.5)) * 50);
+        dayScore += Math.max(0, timeBonus);
+      } else {
+        dayScore -= 30;
+      }
+      player.score += dayScore;
+      totalScore += dayScore;
+      dayResult = { success, dayScore };
     }
 
     function renderTitle() {
