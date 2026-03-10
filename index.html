@@ -13,13 +13,39 @@
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const W = 480, H = 640;
 
-    // 測試：畫一個藍色矩形
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#4af';
-    ctx.fillRect(W/2 - 8, H - 120, 16, 24);
+    // 常數
+    const W = 480, H = 640;
+    const LANE_COUNT = 4;
+    const LANE_WIDTH = 80;
+    const ROAD_LEFT = 80;
+    const ROAD_RIGHT = 400;
+
+    // 遊戲狀態
+    const STATE = { TITLE: 'title', BRIEFING: 'briefing', PLAYING: 'playing', RESULT: 'result', ENDING: 'ending' };
+    let gameState = STATE.TITLE;
+    let currentDay = 1;
+    let totalScore = 0;
+
+    function update(dt) {
+      // 後續各 task 填入
+    }
+
+    function render() {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, W, H);
+      // 後續各 task 填入
+    }
+
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+      update(dt);
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
   </script>
 </body>
 </html>
