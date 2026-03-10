@@ -581,6 +581,51 @@
   }
 }
 
+    function renderEnding() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 24px monospace';
+
+  let title, desc, color;
+  if (totalScore >= 400) {
+    title = '通勤達人！';
+    desc = ['五天全勤，零事故', '老闆決定幫你加薪！', '（現實中不會這樣）'];
+    color = '#f1c40f';
+  } else if (totalScore >= 200) {
+    title = '普通上班族';
+    desc = ['雖然偶有驚險', '但總算撐過這週了', '週末好好休息吧'];
+    color = '#4af';
+  } else if (totalScore >= 0) {
+    title = '辛苦的一週';
+    desc = ['遲到罰款加路上驚嚇', '薪水幾乎都沒了', '要不要考慮搭捷運？'];
+    color = '#e67e22';
+  } else {
+    title = '通勤地獄';
+    desc = ['這週真的很慘', '考慮在家工作吧', '或是搬到公司旁邊'];
+    color = '#e74c3c';
+  }
+
+  ctx.fillStyle = color;
+  ctx.fillText(title, W / 2, 140);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px monospace';
+  desc.forEach((line, i) => {
+    ctx.fillText(line, W / 2, 220 + i * 30);
+  });
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '14px monospace';
+  ctx.fillText(`最終分數：${totalScore}`, W / 2, 380);
+
+  if (Math.floor(Date.now() / 500) % 2 === 0) {
+    ctx.fillStyle = '#4af';
+    ctx.fillText('按 Enter 重新開始', W / 2, 480);
+  }
+}
+
     function renderTitle() {
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, W, H);
@@ -664,6 +709,7 @@
         renderEventNotice();
       }
       if (gameState === STATE.RESULT)   renderResult();
+      if (gameState === STATE.ENDING)   renderEnding();
     }
 
     let lastTime = 0;
