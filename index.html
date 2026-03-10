@@ -33,6 +33,7 @@
         updatePlayer(dt);
         updateObstacles(dt);
         checkCollisions();
+        updateEvents(dt);
         const currentDay_data = DAYS[currentDay - 1];
         if (currentDay_data.weather === 'rainy') updateRain(dt);
         if (player.progress >= 1) endDay(true);
@@ -436,6 +437,63 @@
     }
 
     let noGPS = false;
+    let activeEvent = null;
+    let nextEventTime = 5 + Math.random() * 10;
+
+    const RANDOM_EVENTS = [
+      {
+        id: 'police',
+        label: '🚨 警察取締！強制停車 3 秒',
+        duration: 3,
+        onStart: () => { player.scrollSpeed = 0; },
+        onEnd: () => { player.scrollSpeed = player.baseScrollSpeed; },
+      },
+      {
+        id: 'ambulance',
+        label: '🚑 救護車通過！靠邊停',
+        duration: 2.5,
+        onStart: () => { player.scrollSpeed = 20; player.x = ROAD_LEFT + 4; },
+        onEnd: () => { player.scrollSpeed = player.baseScrollSpeed; },
+      },
+      {
+        id: 'no_gps',
+        label: '📱 導航沒訊號！',
+        duration: 5,
+        onStart: () => { noGPS = true; },
+        onEnd: () => { noGPS = false; },
+      },
+    ];
+
+    function updateEvents(dt) {
+      nextEventTime -= dt;
+      if (nextEventTime <= 0 && !activeEvent) {
+        const ev = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+        activeEvent = { ...ev, remaining: ev.duration };
+        ev.onStart();
+        nextEventTime = 8 + Math.random() * 12;
+      }
+
+      if (activeEvent) {
+        activeEvent.remaining -= dt;
+        if (activeEvent.remaining <= 0) {
+          activeEvent.onEnd();
+          activeEvent = null;
+        }
+      }
+    }
+
+    function renderEventNotice() {
+      if (!activeEvent) return;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(20, H - 80, W - 40, 50);
+      ctx.fillStyle = '#fa0';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(activeEvent.label, W / 2, H - 52);
+      const ratio = activeEvent.remaining / activeEvent.duration;
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(20, H - 32, (W - 40) * ratio, 8);
+    }
 
     function renderHUD() {
       const day = DAYS[currentDay - 1];
@@ -583,6 +641,9 @@
       obstacles = [];
       spawnTimer = 0;
       dynamicSpawnTimer = 0;
+      activeEvent = null;
+      noGPS = false;
+      nextEventTime = 5 + Math.random() * 10;
       const day = DAYS[currentDay - 1];
       if (day.weather === 'rainy') initRain();
     }
@@ -600,6 +661,7 @@
         if (_day.weather === 'rainy') renderRain();
         if (_day.weather === 'foggy') renderFog();
         renderHUD();
+        renderEventNotice();
       }
       if (gameState === STATE.RESULT)   renderResult();
     }
