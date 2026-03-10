@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <title>機車通勤</title>
   <style>
-    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    canvas { display: block; image-rendering: pixelated; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; overflow: hidden; }
+    canvas { display: block; image-rendering: pixelated; transform-origin: center center; }
   </style>
 </head>
 <body>
@@ -13,6 +14,17 @@
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const scaleX = window.innerWidth / 480;
+      const scaleY = window.innerHeight / 640;
+      const scale = Math.min(scaleX, scaleY);
+      canvas.style.width = '480px';
+      canvas.style.height = '640px';
+      canvas.style.transform = `scale(${scale})`;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     // 常數
     const W = 480, H = 640;
