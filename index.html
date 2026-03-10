@@ -207,6 +207,73 @@
     };
     const SPAWN_INTERVAL = 1.2;
 
+    const DYNAMIC_OBSTACLES = {
+      moving_car: {
+        label: '移動車輛', w: 28, h: 44,
+        color: '#8e44ad',
+        vy: -40,
+        damage: 1,
+      },
+      door_open: {
+        label: '開車門', w: 32, h: 16,
+        color: '#e74c3c',
+        vy: 0,
+        damage: 1, lifespan: 0.8,
+      },
+      scooter_dash: {
+        label: '衝出機車', w: 14, h: 22,
+        color: '#16a085',
+        vx: 180, vy: 20,
+        damage: 1,
+      },
+      pedestrian: {
+        label: '行人', w: 12, h: 16,
+        color: '#f1c40f',
+        vx: 60, vy: 0,
+        damage: 0,
+        slowPlayer: true,
+      },
+    };
+
+    let dynamicSpawnTimer = 0;
+    const DYNAMIC_SPAWN_INTERVAL = 2.5;
+
+    function spawnDynamicObstacle() {
+      const types = Object.keys(DYNAMIC_OBSTACLES);
+      const type = types[Math.floor(Math.random() * types.length)];
+      const def = DYNAMIC_OBSTACLES[type];
+      let x, y, vx = def.vx || 0, vy = def.vy || 0;
+
+      if (type === 'scooter_dash') {
+        vx = Math.random() > 0.5 ? 180 : -180;
+        x = vx > 0 ? ROAD_LEFT - 10 : ROAD_RIGHT + 10;
+        y = Math.random() * (H - 200) + 100;
+      } else if (type === 'pedestrian') {
+        x = ROAD_LEFT - 10;
+        y = Math.random() * (H - 200) + 100;
+        vx = 60;
+      } else if (type === 'door_open') {
+        const lane = Math.floor(Math.random() * LANE_COUNT);
+        x = ROAD_LEFT + lane * LANE_WIDTH + 4;
+        y = Math.random() * (H / 2);
+      } else {
+        const lane = Math.floor(Math.random() * LANE_COUNT);
+        x = ROAD_LEFT + lane * LANE_WIDTH + (LANE_WIDTH - def.w) / 2;
+        y = -def.h;
+      }
+
+      obstacles.push({
+        type, x, y, w: def.w, h: def.h,
+        color: def.color,
+        draw: type === 'moving_car' ? drawCar : drawGenericObstacle,
+        damage: def.damage,
+        vx, vy,
+        lifespan: def.lifespan !== undefined ? def.lifespan : null,
+        slowPlayer: def.slowPlayer || false,
+        dynamic: true,
+      });
+    }
+
     function spawnObstacle() {
       const types = Object.keys(OBSTACLE_TYPES);
       const type = types[Math.floor(Math.random() * types.length)];
@@ -229,10 +296,31 @@
         spawnTimer = 0;
         spawnObstacle();
       }
+
+      dynamicSpawnTimer += dt;
+      if (dynamicSpawnTimer >= DYNAMIC_SPAWN_INTERVAL) {
+        dynamicSpawnTimer = 0;
+        spawnDynamicObstacle();
+      }
+
       obstacles.forEach(o => {
-        o.y += player.scrollSpeed * dt;
+        if (o.dynamic) {
+          o.x += (o.vx || 0) * dt;
+          o.y += (player.scrollSpeed + (o.vy || 0)) * dt;
+          if (o.lifespan !== null) {
+            o.lifespan -= dt;
+          }
+        } else {
+          o.y += player.scrollSpeed * dt;
+        }
       });
-      obstacles = obstacles.filter(o => o.y < H + 60);
+
+      obstacles = obstacles.filter(o => {
+        if (o.lifespan !== null && o.lifespan <= 0) return false;
+        if (o.x < ROAD_LEFT - 60 || o.x > ROAD_RIGHT + 60) return false;
+        if (o.y > H + 60) return false;
+        return true;
+      });
     }
 
     function renderObstacles() {
@@ -298,6 +386,7 @@
       roadOffset = 0;
       obstacles = [];
       spawnTimer = 0;
+      dynamicSpawnTimer = 0;
     }
 
     function render() {
