@@ -379,6 +379,65 @@
       dayResult = { success, dayScore };
     }
 
+    let noGPS = false;
+
+    function renderHUD() {
+      const day = DAYS[currentDay - 1];
+
+      // 頂部黑條
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, W, 44);
+
+      // 天數
+      ctx.fillStyle = '#4af';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`第${currentDay}天 ${day.name}`, 8, 18);
+
+      // 天氣
+      ctx.fillStyle = '#fff';
+      ctx.font = '13px monospace';
+      ctx.fillText(`${WEATHER_EMOJI[day.weather]} ${WEATHER_NAME[day.weather]}`, 8, 36);
+
+      // 生命值（心形）
+      ctx.textAlign = 'center';
+      ctx.font = '18px monospace';
+      for (let i = 0; i < player.maxHp; i++) {
+        ctx.fillStyle = i < player.hp ? '#e74c3c' : '#555';
+        ctx.fillText('♥', W/2 - 20 + i * 22, 20);
+      }
+
+      // 進度條（noGPS 時隱藏）
+      if (!noGPS) {
+        const barW = 120, barX = W - 140;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(barX, 8, barW, 12);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(barX, 8, barW * player.progress, 12);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, 8, barW, 12);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('公司', W - 8, 18);
+      }
+
+      // 分數
+      ctx.fillStyle = '#fa0';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`分數：${totalScore}`, W - 8, 36);
+
+      // 撞擊提示
+      if (player.invincible > 0) {
+        ctx.fillStyle = `rgba(255,100,100,${0.5 + Math.sin(Date.now() / 100) * 0.5})`;
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('！撞擊！', W / 2, H / 2);
+      }
+    }
+
     function renderTitle() {
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, W, H);
@@ -446,7 +505,7 @@
       ctx.fillRect(0, 0, W, H);
       if (gameState === STATE.TITLE)    renderTitle();
       if (gameState === STATE.BRIEFING) renderBriefing();
-      if (gameState === STATE.PLAYING)  { renderRoad(); renderObstacles(); renderPlayer(); }
+      if (gameState === STATE.PLAYING)  { renderRoad(); renderObstacles(); renderPlayer(); renderHUD(); }
     }
 
     let lastTime = 0;
