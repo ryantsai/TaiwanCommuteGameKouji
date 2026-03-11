@@ -105,6 +105,296 @@ const LEVELS = [
     deadlineMs: 200000,
     rainAfterStage: 2,
   },
+
+  // ===== 第 2 關：台中市區 =====
+  {
+    name: '台中市區',
+    mapW: 50, mapH: 42,
+    hRoads: [
+      { y: [4, 5], x1: 0, x2: 49 },         // 自由路
+      { y: [12, 13], x1: 0, x2: 49 },        // 三民路
+      { y: [20, 21], x1: 0, x2: 49 },        // 台灣大道（核心主幹）
+      { y: [28, 29], x1: 0, x2: 49 },        // 公益路
+      { y: [36, 37], x1: 4, x2: 45 },        // 建國路
+      { y: [8, 9], x1: 6, x2: 32 },          // 英才路
+      { y: [16, 17], x1: 10, x2: 40 },       // 中正路橫段
+      { y: [24, 25], x1: 8, x2: 38 },        // 民權路
+      { y: [32, 33], x1: 12, x2: 42 },       // 進化路
+    ],
+    vRoads: [
+      { x: [4, 5], y1: 0, y2: 41 },          // 經國路
+      { x: [13, 14], y1: 0, y2: 41 },         // 中正路縱向
+      { x: [22, 23], y1: 0, y2: 41 },         // 文心路
+      { x: [31, 32], y1: 0, y2: 41 },         // 復興路
+      { x: [40, 41], y1: 0, y2: 41 },         // 東大路
+      { x: [9, 10], y1: 4, y2: 29 },          // 五權路
+      { x: [18, 19], y1: 8, y2: 37 },         // 美村路
+      { x: [27, 28], y1: 4, y2: 33 },         // 大墩路
+      { x: [36, 37], y1: 12, y2: 41 },        // 文心南路
+    ],
+    moat: [
+      { x: 15, y: 6 }, { x: 16, y: 6 }, { x: 17, y: 6 },
+      { x: 15, y: 7 }, { x: 16, y: 7 }, { x: 17, y: 7 },
+      { x: 15, y: 8 }, { x: 16, y: 8 }, { x: 17, y: 8 },
+    ],
+    pois: [
+      { key: 'poi1', gridX: 11, gridY: 15, texture: 'poiTemple', label: '宮原眼科', color: 0xef4444 },
+      { key: 'poi2', gridX: 33, gridY: 38, texture: 'poiStation', label: '台中車站', color: 0x3b82f6 },
+      { key: 'poi3', gridX: 6, gridY: 3, texture: 'poiMall', label: '逢甲夜市', color: 0xf59e0b },
+      { key: 'poi4', gridX: 43, gridY: 22, texture: 'poiOffice', label: '台中辦公室', color: 0x22c55e },
+    ],
+    landmarks: [
+      { x: 16, y: 7, label: '台中公園 湖心亭', radius: 2 },
+    ],
+    quests: [
+      '📋 任務1：去宮原眼科買冰淇淋當早餐',
+      '📋 任務2：騎到台中車站收取快遞',
+      '📋 任務3：去逢甲夜市買一份大腸包小腸',
+      '📋 任務4：趕去台中辦公室打卡上班！',
+      '🎉 台中關完成！你是文心路最強通勤王！',
+    ],
+    roadLabels: [
+      { text: '自由路', x: 24, y: 4 },
+      { text: '三民路', x: 24, y: 12 },
+      { text: '台灣大道', x: 24, y: 20 },
+      { text: '公益路', x: 24, y: 28 },
+      { text: '建國路', x: 24, y: 36 },
+      { text: '英才路', x: 18, y: 8 },
+      { text: '中正路', x: 25, y: 16 },
+      { text: '民權路', x: 22, y: 24 },
+      { text: '進化路', x: 26, y: 32 },
+      { text: '經國路', x: 4, y: 20 },
+      { text: '文心路', x: 22, y: 16 },
+      { text: '復興路', x: 31, y: 20 },
+      { text: '東大路', x: 40, y: 20 },
+      { text: '五權路', x: 9, y: 20 },
+      { text: '美村路', x: 18, y: 22 },
+      { text: '大墩路', x: 27, y: 20 },
+      { text: '文心南路', x: 36, y: 28 },
+      { text: '台中公園', x: 16, y: 5 },
+    ],
+    playerStart: { x: 14, y: 20 },
+    deadlineMs: 210000,
+    rainAfterStage: 2,
+  },
+
+  // ===== 第 3 關：彰化市區 =====
+  {
+    name: '彰化市區',
+    mapW: 40, mapH: 34,
+    hRoads: [
+      { y: [4, 5], x1: 0, x2: 39 },          // 中山路
+      { y: [12, 13], x1: 0, x2: 39 },         // 中正路
+      { y: [20, 21], x1: 0, x2: 39 },         // 民生路
+      { y: [28, 29], x1: 4, x2: 35 },         // 光復路
+      { y: [8, 9], x1: 5, x2: 26 },           // 永樂街
+      { y: [16, 17], x1: 8, x2: 32 },         // 中華路橫段
+      { y: [24, 25], x1: 6, x2: 30 },         // 南郭路
+      { y: [31, 32], x1: 10, x2: 34 },        // 彰南路
+    ],
+    vRoads: [
+      { x: [4, 5], y1: 0, y2: 33 },           // 中華路
+      { x: [12, 13], y1: 0, y2: 33 },          // 民族路
+      { x: [20, 21], y1: 0, y2: 33 },          // 成功路
+      { x: [28, 29], y1: 0, y2: 33 },          // 光復路縱向
+      { x: [8, 9], y1: 4, y2: 21 },            // 中正路縱段
+      { x: [16, 17], y1: 8, y2: 29 },          // 和平路
+      { x: [24, 25], y1: 4, y2: 28 },          // 三民路縱向
+      { x: [33, 34], y1: 12, y2: 33 },         // 卦山路
+    ],
+    moat: [
+      { x: 7, y: 10 }, { x: 8, y: 10 },
+      { x: 7, y: 11 }, { x: 8, y: 11 },
+      { x: 6, y: 14 }, { x: 7, y: 14 },
+      { x: 6, y: 15 }, { x: 7, y: 15 },
+    ],
+    pois: [
+      { key: 'poi1', gridX: 35, gridY: 10, texture: 'poiTemple', label: '八卦山大佛', color: 0xf59e0b },
+      { key: 'poi2', gridX: 3, gridY: 7, texture: 'poiStation', label: '彰化車站', color: 0x3b82f6 },
+      { key: 'poi3', gridX: 3, gridY: 22, texture: 'poiMall', label: '扇形車庫', color: 0xa78bfa },
+      { key: 'poi4', gridX: 22, gridY: 15, texture: 'poiOffice', label: '彰化辦公室', color: 0x22c55e },
+    ],
+    landmarks: [
+      { x: 34, y: 9, label: '八卦山入口', radius: 1 },
+    ],
+    quests: [
+      '📋 任務1：去八卦山大佛下吃爌肉飯',
+      '📋 任務2：騎到彰化車站等同事',
+      '📋 任務3：去扇形車庫拍火車打卡',
+      '📋 任務4：趕去彰化辦公室打卡上班！',
+      '🎉 彰化關完成！你是卦山下最強通勤騎士！',
+    ],
+    roadLabels: [
+      { text: '中山路', x: 18, y: 4 },
+      { text: '中正路', x: 18, y: 12 },
+      { text: '民生路', x: 18, y: 20 },
+      { text: '光復路', x: 18, y: 28 },
+      { text: '永樂街', x: 14, y: 8 },
+      { text: '中華路', x: 18, y: 16 },
+      { text: '南郭路', x: 16, y: 24 },
+      { text: '彰南路', x: 20, y: 31 },
+      { text: '中華路', x: 4, y: 16 },
+      { text: '民族路', x: 12, y: 16 },
+      { text: '成功路', x: 20, y: 16 },
+      { text: '光復路', x: 28, y: 16 },
+      { text: '和平路', x: 16, y: 20 },
+      { text: '三民路', x: 24, y: 20 },
+      { text: '卦山路', x: 33, y: 22 },
+      { text: '護城溪', x: 7, y: 11 },
+    ],
+    playerStart: { x: 13, y: 20 },
+    deadlineMs: 180000,
+    rainAfterStage: 1,
+  },
+
+  // ===== 第 4 關：台南市區 =====
+  {
+    name: '台南市區',
+    mapW: 48, mapH: 40,
+    hRoads: [
+      { y: [4, 5], x1: 0, x2: 47 },          // 北門路
+      { y: [12, 13], x1: 0, x2: 47 },         // 民族路
+      { y: [20, 21], x1: 0, x2: 47 },         // 民生路
+      { y: [28, 29], x1: 0, x2: 47 },         // 府前路
+      { y: [36, 37], x1: 4, x2: 43 },         // 南門路
+      { y: [8, 9], x1: 6, x2: 35 },           // 成功路
+      { y: [16, 17], x1: 8, x2: 38 },         // 中正路
+      { y: [24, 25], x1: 6, x2: 34 },         // 永福路
+      { y: [32, 33], x1: 10, x2: 40 },        // 樹林街
+    ],
+    vRoads: [
+      { x: [4, 5], y1: 0, y2: 39 },           // 西門路
+      { x: [13, 14], y1: 0, y2: 39 },          // 中正路縱向
+      { x: [22, 23], y1: 0, y2: 39 },          // 海安路
+      { x: [31, 32], y1: 0, y2: 39 },          // 成功路縱向
+      { x: [40, 41], y1: 0, y2: 39 },          // 東門路
+      { x: [9, 10], y1: 4, y2: 29 },           // 民權路縱段
+      { x: [18, 19], y1: 8, y2: 37 },          // 永福路縱段
+      { x: [27, 28], y1: 4, y2: 33 },          // 友愛路縱段
+      { x: [36, 37], y1: 12, y2: 39 },         // 長榮路
+    ],
+    moat: [
+      { x: 4, y: 32 }, { x: 5, y: 32 }, { x: 6, y: 32 },
+      { x: 7, y: 32 }, { x: 8, y: 32 }, { x: 9, y: 32 },
+      { x: 4, y: 33 }, { x: 5, y: 33 }, { x: 6, y: 33 },
+      { x: 7, y: 33 }, { x: 8, y: 33 }, { x: 9, y: 33 },
+    ],
+    pois: [
+      { key: 'poi1', gridX: 11, gridY: 15, texture: 'poiTemple', label: '赤崁樓', color: 0xef4444 },
+      { key: 'poi2', gridX: 2, gridY: 22, texture: 'poiTemple', label: '安平古堡', color: 0xf59e0b },
+      { key: 'poi3', gridX: 15, gridY: 18, texture: 'poiMall', label: '林百貨', color: 0xa78bfa },
+      { key: 'poi4', gridX: 43, gridY: 21, texture: 'poiOffice', label: '台南辦公室', color: 0x22c55e },
+    ],
+    landmarks: [
+      { x: 14, y: 30, label: '大南門', radius: 1 },
+    ],
+    quests: [
+      '📋 任務1：去赤崁樓旁吃碗牛肉湯當早餐',
+      '📋 任務2：騎到安平古堡買蝦餅伴手禮',
+      '📋 任務3：去林百貨頂樓拍台南風景',
+      '📋 任務4：趕去台南辦公室打卡上班！',
+      '🎉 台南關完成！你是府城最強通勤王！',
+    ],
+    roadLabels: [
+      { text: '北門路', x: 22, y: 4 },
+      { text: '民族路', x: 22, y: 12 },
+      { text: '民生路', x: 22, y: 20 },
+      { text: '府前路', x: 22, y: 28 },
+      { text: '南門路', x: 22, y: 36 },
+      { text: '成功路', x: 18, y: 8 },
+      { text: '中正路', x: 22, y: 16 },
+      { text: '永福路', x: 18, y: 24 },
+      { text: '樹林街', x: 24, y: 32 },
+      { text: '西門路', x: 4, y: 20 },
+      { text: '海安路', x: 22, y: 14 },
+      { text: '成功路', x: 31, y: 20 },
+      { text: '東門路', x: 40, y: 20 },
+      { text: '民權路', x: 9, y: 20 },
+      { text: '永福路', x: 18, y: 20 },
+      { text: '友愛路', x: 27, y: 20 },
+      { text: '長榮路', x: 36, y: 28 },
+      { text: '台南運河', x: 7, y: 32 },
+    ],
+    playerStart: { x: 14, y: 20 },
+    deadlineMs: 220000,
+    rainAfterStage: 2,
+  },
+
+  // ===== 第 5 關：台北市區 =====
+  {
+    name: '台北市區',
+    mapW: 56, mapH: 46,
+    hRoads: [
+      { y: [4, 5], x1: 0, x2: 55 },          // 民權東路
+      { y: [12, 13], x1: 0, x2: 55 },         // 南京東路
+      { y: [20, 21], x1: 0, x2: 55 },         // 忠孝東路
+      { y: [28, 29], x1: 0, x2: 55 },         // 仁愛路
+      { y: [36, 37], x1: 0, x2: 55 },         // 信義路
+      { y: [42, 43], x1: 4, x2: 51 },         // 羅斯福路
+      { y: [8, 9], x1: 6, x2: 40 },           // 長安東路
+      { y: [16, 17], x1: 8, x2: 44 },         // 市民大道
+      { y: [24, 25], x1: 6, x2: 42 },         // 和平東路
+      { y: [32, 33], x1: 10, x2: 50 },        // 辛亥路
+      { y: [39, 40], x1: 8, x2: 48 },         // 基隆路橫段
+    ],
+    vRoads: [
+      { x: [4, 5], y1: 0, y2: 45 },           // 中山北路
+      { x: [13, 14], y1: 0, y2: 45 },          // 中華路
+      { x: [22, 23], y1: 0, y2: 45 },          // 復興南路
+      { x: [31, 32], y1: 0, y2: 45 },          // 敦化南路
+      { x: [40, 41], y1: 0, y2: 45 },          // 光復南路
+      { x: [49, 50], y1: 0, y2: 45 },          // 松壽路
+      { x: [9, 10], y1: 4, y2: 37 },           // 林森北路
+      { x: [18, 19], y1: 8, y2: 43 },          // 新生南路
+      { x: [27, 28], y1: 4, y2: 40 },          // 建國南路
+      { x: [36, 37], y1: 12, y2: 45 },         // 基隆路縱向
+      { x: [45, 46], y1: 4, y2: 42 },          // 逸仙路
+    ],
+    pois: [
+      { key: 'poi1', gridX: 6, gridY: 19, texture: 'poiMall', label: '西門町', color: 0xec4899 },
+      { key: 'poi2', gridX: 51, gridY: 38, texture: 'poiStation', label: '台北101', color: 0x06b6d4 },
+      { key: 'poi3', gridX: 11, gridY: 22, texture: 'poiStation', label: '台北車站', color: 0x3b82f6 },
+      { key: 'poi4', gridX: 47, gridY: 34, texture: 'poiOffice', label: '信義區辦公室', color: 0x22c55e },
+    ],
+    landmarks: [
+      { x: 18, y: 34, label: '中正紀念堂', radius: 2 },
+    ],
+    quests: [
+      '📋 任務1：去西門町買雞排配珍奶',
+      '📋 任務2：騎去台北101觀景台打卡',
+      '📋 任務3：去台北車站收重要包裹',
+      '📋 任務4：趕去信義區辦公室打卡上班！',
+      '🎉 台北關完成！你是首都最強通勤機車騎士！',
+    ],
+    roadLabels: [
+      { text: '民權東路', x: 26, y: 4 },
+      { text: '南京東路', x: 26, y: 12 },
+      { text: '忠孝東路', x: 26, y: 20 },
+      { text: '仁愛路', x: 26, y: 28 },
+      { text: '信義路', x: 26, y: 36 },
+      { text: '羅斯福路', x: 26, y: 42 },
+      { text: '長安東路', x: 20, y: 8 },
+      { text: '市民大道', x: 24, y: 16 },
+      { text: '和平東路', x: 22, y: 24 },
+      { text: '辛亥路', x: 28, y: 32 },
+      { text: '基隆路', x: 26, y: 39 },
+      { text: '中山北路', x: 4, y: 20 },
+      { text: '中華路', x: 13, y: 20 },
+      { text: '復興南路', x: 22, y: 14 },
+      { text: '敦化南路', x: 31, y: 20 },
+      { text: '光復南路', x: 40, y: 20 },
+      { text: '松壽路', x: 49, y: 28 },
+      { text: '林森北路', x: 9, y: 20 },
+      { text: '新生南路', x: 18, y: 20 },
+      { text: '建國南路', x: 27, y: 14 },
+      { text: '基隆路', x: 36, y: 30 },
+      { text: '逸仙路', x: 45, y: 20 },
+      { text: '中正紀念堂', x: 18, y: 32 },
+    ],
+    playerStart: { x: 23, y: 20 },
+    deadlineMs: 250000,
+    rainAfterStage: 2,
+  },
 ];
 
 export default class WorldScene extends Phaser.Scene {
@@ -116,7 +406,7 @@ export default class WorldScene extends Phaser.Scene {
     this.MAP_W = this.level.mapW;
     this.MAP_H = this.level.mapH;
 
-    this.score = 0;
+    this.score = this.registry.get('score') || 0;
     this.combo = 1;
     this.lastCoinTime = 0;
     this.isBoosting = false;
@@ -804,10 +1094,11 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   setStage(stage) {
+    const totalPois = this.level.pois.length;
     this.questState.stage = stage;
     this.msg.setText(this.level.quests[Math.min(stage, this.level.quests.length - 1)]);
 
-    if (stage > 0 && stage < 5) {
+    if (stage > 0 && stage < totalPois + 1) {
       this.sfx.interact.play();
       this.score += 100 * stage;
       this.showFloatingText(this.player.x, this.player.y - 50, `任務完成 +${100 * stage}分！`, '#22c55e');
@@ -815,10 +1106,11 @@ export default class WorldScene extends Phaser.Scene {
     }
     if (stage === this.level.rainAfterStage) {
       this.rain.start();
-      this.showFloatingText(this.player.x, this.player.y - 70, '下雨了！新竹風大路滑小心！', '#93c5fd');
+      const rainMsgs = ['下雨了！路滑小心！', '突然下起大雨！減速慢行！', '雨天路滑注意安全！'];
+      this.showFloatingText(this.player.x, this.player.y - 70, rainMsgs[Phaser.Math.Between(0, rainMsgs.length - 1)], '#93c5fd');
       this.baseSpeed = 160;
     }
-    if (stage === 4) {
+    if (stage === totalPois) {
       this.rain.stop();
       this.baseSpeed = 200;
       this.gameWon = true;
@@ -844,6 +1136,7 @@ export default class WorldScene extends Phaser.Scene {
     const timeBonus = Math.floor(left / 1000) * 5;
     this.score += timeBonus;
     const cx = this.scale.width / 2, cy = this.scale.height / 2;
+    const hasNextLevel = this.levelIndex + 1 < LEVELS.length;
 
     this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.6)
       .setScrollFactor(0).setDepth(30);
@@ -851,16 +1144,37 @@ export default class WorldScene extends Phaser.Scene {
       fontSize: '42px', color: '#fbbf24', fontStyle: 'bold',
       stroke: '#000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-    this.add.text(cx, cy, [
+
+    const lines = [
       `金幣分數：${this.score - timeBonus}`,
       `剩餘時間加成：+${timeBonus}`,
       `最終分數：${this.score}`,
       '',
-      '按 R 重新開始',
-    ].join('\n'), {
+    ];
+    if (hasNextLevel) {
+      const nextName = LEVELS[this.levelIndex + 1].name;
+      lines.push(`按 N 進入下一關：${nextName}`);
+      lines.push('按 R 重玩本關');
+    } else {
+      lines.push('🎊 恭喜！全部關卡通關！你是全台灣最強通勤王！');
+      lines.push('按 R 從頭開始');
+    }
+    this.add.text(cx, cy, lines.join('\n'), {
       fontSize: '22px', color: '#fff', align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-    this.input.keyboard.once('keydown-R', () => this.scene.restart());
+
+    if (hasNextLevel) {
+      this.input.keyboard.once('keydown-N', () => {
+        this.registry.set('levelIndex', this.levelIndex + 1);
+        this.registry.set('score', this.score);
+        this.scene.restart();
+      });
+    }
+    this.input.keyboard.once('keydown-R', () => {
+      this.registry.set('levelIndex', hasNextLevel ? this.levelIndex : 0);
+      this.registry.set('score', 0);
+      this.scene.restart();
+    });
   }
 
   showGameOver() {
@@ -969,7 +1283,7 @@ export default class WorldScene extends Phaser.Scene {
     const urgent = sec <= 30;
     this.hud.setText([
       `⏱ ${sec}s ${urgent ? '⚠ 快沒時間了！' : ''}`,
-      `📋 任務：${this.questState.stage}/4`,
+      `📋 任務：${this.questState.stage}/${this.level.pois.length}`,
       `🔥 連擊：${this.combo}x`,
     ].join('\n'));
     this.hud.setColor(urgent ? '#ef4444' : '#fff');
@@ -993,7 +1307,7 @@ export default class WorldScene extends Phaser.Scene {
     // 方向箭頭
     const targetKey = this.poiKeys[this.questState.stage];
     const curTarget = this.poi[targetKey];
-    if (curTarget && this.questState.stage < 4) {
+    if (curTarget && this.questState.stage < this.level.pois.length) {
       const tx = curTarget.sprite.x, ty = curTarget.sprite.y;
       const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, tx, ty);
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, tx, ty);
@@ -1077,6 +1391,6 @@ export default class WorldScene extends Phaser.Scene {
       if (nearCars.length > 0) this.sfx.honk.play();
     }
 
-    if (left <= 0 && this.questState.stage < 4) this.showGameOver();
+    if (left <= 0 && this.questState.stage < this.level.pois.length) this.showGameOver();
   }
 }
