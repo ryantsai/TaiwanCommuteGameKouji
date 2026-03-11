@@ -568,23 +568,25 @@ export default class WorldScene extends Phaser.Scene {
     if (horizontal && this.hLanes.length > 0) {
       const lane = this.hLanes[Phaser.Math.Between(0, this.hLanes.length - 1)];
       const goRight = lane.y % 2 === 0;
-      x = goRight ? (lane.x1 * TILE - 80) : (lane.x2 * TILE + 80);
+      // 永遠從地圖邊緣生成，不管車道實際起終點
+      x = goRight ? -80 : (this.MAP_W * TILE + 80);
       y = lane.y * TILE + TILE / 2;
       const speed = Phaser.Math.Between(80, 170);
       vx = goRight ? speed : -speed;
       vy = 0;
-      flipX = !goRight; // 往左時翻轉 X
-      angle = 0; // 保持水平朝向，不旋轉
+      flipX = !goRight;
+      angle = 0;
     } else if (this.vLanes.length > 0) {
       const lane = this.vLanes[Phaser.Math.Between(0, this.vLanes.length - 1)];
       const goDown = lane.x % 2 === 0;
       x = lane.x * TILE + TILE / 2;
-      y = goDown ? (lane.y1 * TILE - 80) : (lane.y2 * TILE + 80);
+      // 永遠從地圖邊緣生成
+      y = goDown ? -80 : (this.MAP_H * TILE + 80);
       const speed = Phaser.Math.Between(80, 170);
       vx = 0;
       vy = goDown ? speed : -speed;
       flipX = false;
-      angle = goDown ? 90 : -90; // 90度向下，-90度向上
+      angle = goDown ? 90 : -90;
     } else {
       return;
     }
