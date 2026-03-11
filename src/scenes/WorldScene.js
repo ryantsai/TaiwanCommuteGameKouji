@@ -9,88 +9,100 @@ const NPC_TYPES = [
 ];
 
 // ===== 台灣城市關卡定義 =====
-// 根據真實新竹市區路網設計
-// 地圖方位：上=北(頭前溪)，下=南(光復路往清大)，左=西(車站)，右=東(巨城/園區)
+// 根據真實新竹市古蹟地圖重新設計
+// 參考：tonyhuang39.com/tony0508/map508.gif
 //
-// 真實對照：
-// - 新竹車站在市中心偏西（左側）
-// - 城隍廟在車站東北方，中山路上
-// - 東門圓環是中正路/中華路/東門街的大型圓環
-// - 巨城在東門圓環東邊，中央路上
-// - 清華大學在東南方，光復路二段
-// - 中正路從車站往東南延伸穿過東門圓環
-// - 經國路在西側南北向
-// - 光復路在南側東西橫貫
+// 地圖方位：上=北，下=南，左=西，右=東
+// 核心地標相對位置（根據地圖）：
+// - 新竹車站在右下方（東南）
+// - 城隍廟在中間偏左上（西北方向）
+// - 東門圓環（迎曦門）在中間，護城河穿過
+// - 護城河從右上(東北)往左下(西南)斜向流
+// - 經國路在最左（西側），中正路偏左貫穿南北
+// - 北大路從左上斜向右上（斜向道路）
+// - 中華路在東門圓環東側往右延伸
+// - 林森路在車站上方橫向
 const LEVELS = [
   {
     name: '新竹市區',
-    mapW: 52, mapH: 38,
+    mapW: 48, mapH: 40,
     hRoads: [
       // === 主幹道 ===
-      { y: [3, 4], x1: 0, x2: 51 },       // 東大路/北大路（北側，頭前溪南岸）
-      { y: [11, 12], x1: 0, x2: 51 },      // 中華路（東西向主幹道，經過城隍廟南側）
-      { y: [19, 20], x1: 0, x2: 51 },      // 東門街/西大路（東門圓環橫向）
-      { y: [27, 28], x1: 0, x2: 51 },      // 光復路（南側大路，往清大方向）
-      { y: [35, 36], x1: 8, x2: 43 },      // 公道五路（最南端）
+      { y: [5, 6], x1: 0, x2: 47 },        // 西大路/東大路（北側）
+      { y: [13, 14], x1: 0, x2: 47 },       // 北門街橫段/府後街
+      { y: [21, 22], x1: 0, x2: 47 },       // 東門街（經過東門圓環，核心橫向）
+      { y: [29, 30], x1: 0, x2: 47 },       // 林森路（車站北側）
+      { y: [37, 38], x1: 5, x2: 42 },       // 西大路南段
       // === 次要道路 ===
-      { y: [7, 8], x1: 3, x2: 35 },        // 中山路（城隍廟前）
-      { y: [15, 16], x1: 10, x2: 43 },     // 勝利路/民族路
-      { y: [23, 24], x1: 5, x2: 30 },      // 林森路
-      { y: [31, 32], x1: 15, x2: 45 },     // 建功路
+      { y: [9, 10], x1: 5, x2: 28 },        // 中山路（城隍廟前方）
+      { y: [17, 18], x1: 12, x2: 40 },      // 民富街/文化街
+      { y: [25, 26], x1: 8, x2: 35 },       // 南門街/石坊街
+      { y: [33, 34], x1: 10, x2: 38 },      // 中正路橫段（車站前）
     ],
     vRoads: [
       // === 主幹道 ===
-      { x: [5, 6], y1: 0, y2: 37 },        // 經國路（西側南北大路）
-      { x: [14, 15], y1: 0, y2: 37 },       // 中正路（車站到東門圓環的核心路）
-      { x: [24, 25], y1: 0, y2: 37 },       // 中央路/東門街（東門圓環往東）
-      { x: [34, 35], y1: 0, y2: 37 },       // 食品路/光華街
-      { x: [44, 45], y1: 0, y2: 37 },       // 園區路（往科學園區）
+      { x: [4, 5], y1: 0, y2: 39 },         // 經國路（最西側主幹道）
+      { x: [13, 14], y1: 0, y2: 39 },        // 北門街/中正路（南北向核心）
+      { x: [22, 23], y1: 0, y2: 39 },        // 東門街縱段/中央路
+      { x: [31, 32], y1: 0, y2: 39 },        // 民族路/文化街
+      { x: [40, 41], y1: 0, y2: 39 },        // 中華路二段/東大路
       // === 次要道路 ===
-      { x: [9, 10], y1: 3, y2: 20 },        // 北門街/長安街
-      { x: [19, 20], y1: 7, y2: 28 },       // 東門街/中山路交叉
-      { x: [29, 30], y1: 3, y2: 32 },       // 民族路
-      { x: [39, 40], y1: 7, y2: 36 },       // 建中路
+      { x: [9, 10], y1: 5, y2: 26 },         // 大同路/世界街
+      { x: [18, 19], y1: 9, y2: 30 },        // 南門街縱段
+      { x: [27, 28], y1: 5, y2: 34 },        // 府後街/東門街
+      { x: [36, 37], y1: 13, y2: 38 },       // 光復路
+    ],
+    // 護城河座標（斜向，從東北到西南）
+    moat: [
+      { x: 35, y: 11 }, { x: 34, y: 12 }, { x: 33, y: 13 }, { x: 32, y: 14 },
+      { x: 31, y: 15 }, { x: 30, y: 16 }, { x: 29, y: 17 }, { x: 28, y: 18 },
+      { x: 27, y: 19 }, { x: 26, y: 20 },
+      // 護城河在東門圓環處轉彎往西南
+      { x: 25, y: 21 }, { x: 24, y: 22 }, { x: 23, y: 23 },
+      { x: 22, y: 24 }, { x: 21, y: 25 }, { x: 20, y: 26 },
+      { x: 19, y: 27 }, { x: 18, y: 28 },
     ],
     // POI 放在路旁建築區（非馬路上）
     pois: [
-      { key: 'poi1', gridX: 12, gridY: 9, texture: 'poiTemple', label: '城隍廟', color: 0xef4444 },
-      { key: 'poi2', gridX: 12, gridY: 18, texture: 'poiStation', label: '新竹車站', color: 0x3b82f6 },
-      { key: 'poi3', gridX: 42, gridY: 14, texture: 'poiUniversity', label: '清華大學', color: 0x8b5cf6 },
-      { key: 'poi4', gridX: 42, gridY: 30, texture: 'poiOffice', label: '科學園區公司', color: 0x22c55e },
+      { key: 'poi1', gridX: 11, gridY: 11, texture: 'poiTemple', label: '城隍廟', color: 0xef4444 },
+      { key: 'poi2', gridX: 38, gridY: 31, texture: 'poiStation', label: '新竹車站', color: 0x3b82f6 },
+      { key: 'poi3', gridX: 34, gridY: 15, texture: 'poiMall', label: '巨城 Big City', color: 0x8b5cf6 },
+      { key: 'poi4', gridX: 43, gridY: 7, texture: 'poiOffice', label: '園區公司', color: 0x22c55e },
     ],
-    // 東門圓環位置（特殊地標）
     landmarks: [
-      { x: 21, y: 18, label: '東門圓環', radius: 2 },
+      { x: 25, y: 21, label: '東門 迎曦門', radius: 2 },
     ],
     quests: [
       '📋 任務1：去城隍廟吃米粉貢丸當早餐',
       '📋 任務2：騎到新竹車站接包裹',
-      '📋 任務3：去清大送文件',
-      '📋 任務4：趕去科學園區公司打卡上班！',
+      '📋 任務3：去巨城 Big City 買咖啡',
+      '📋 任務4：趕去園區公司打卡上班！',
       '🎉 新竹關完成！你是風城最強通勤王！',
     ],
     roadLabels: [
-      { text: '東大路', x: 26, y: 3 },
-      { text: '中華路', x: 26, y: 11 },
-      { text: '東門街', x: 12, y: 19 },
-      { text: '西大路', x: 38, y: 19 },
-      { text: '光復路', x: 26, y: 27 },
-      { text: '公道五', x: 26, y: 35 },
-      { text: '中山路', x: 19, y: 7 },
-      { text: '勝利路', x: 26, y: 15 },
-      { text: '林森路', x: 17, y: 23 },
-      { text: '建功路', x: 30, y: 31 },
-      { text: '經國路', x: 5, y: 22 },
-      { text: '中正路', x: 14, y: 14 },
-      { text: '中央路', x: 24, y: 14 },
-      { text: '食品路', x: 34, y: 22 },
-      { text: '園區路', x: 44, y: 22 },
-      { text: '北門街', x: 9, y: 10 },
-      { text: '民族路', x: 29, y: 18 },
-      { text: '建中路', x: 39, y: 22 },
+      { text: '東大路', x: 24, y: 5 },
+      { text: '北門街', x: 9, y: 13 },
+      { text: '府後街', x: 28, y: 13 },
+      { text: '東門街', x: 12, y: 21 },
+      { text: '中華路', x: 38, y: 21 },
+      { text: '林森路', x: 24, y: 29 },
+      { text: '中山路', x: 16, y: 9 },
+      { text: '民富街', x: 26, y: 17 },
+      { text: '南門街', x: 18, y: 25 },
+      { text: '中正路', x: 13, y: 34 },
+      { text: '經國路', x: 4, y: 20 },
+      { text: '中正路', x: 13, y: 20 },
+      { text: '中央路', x: 22, y: 16 },
+      { text: '民族路', x: 31, y: 20 },
+      { text: '中華路二段', x: 40, y: 16 },
+      { text: '大同路', x: 9, y: 16 },
+      { text: '文化街', x: 31, y: 10 },
+      { text: '光復路', x: 36, y: 26 },
+      { text: '西大路', x: 24, y: 37 },
+      { text: '護城河', x: 30, y: 15 },
     ],
-    playerStart: { x: 16, y: 14 },  // 從中正路/勝利路附近出發
-    deadlineMs: 200000,  // 地圖更大，給多一點時間
+    playerStart: { x: 15, y: 16 },  // 從中正路/民富街出發（市中心）
+    deadlineMs: 200000,
     rainAfterStage: 2,
   },
 ];
@@ -285,6 +297,20 @@ export default class WorldScene extends Phaser.Scene {
     return this.roadSet.has(`${x},${y}`);
   }
 
+  // 玩家能否進入某格：道路、POI 周圍、或人行道（POI旁）
+  canPlayerEnter(px, py) {
+    const gx = Math.floor(px / TILE);
+    const gy = Math.floor(py / TILE);
+    if (this.isRoad(gx, gy)) return true;
+    // POI 附近 3 格內可以進入（要去任務點）
+    for (const p of this.level.pois) {
+      const dx = Math.abs(gx - p.gridX);
+      const dy = Math.abs(gy - p.gridY);
+      if (dx <= 2 && dy <= 2) return true;
+    }
+    return false;
+  }
+
   buildMap() {
     this.add.tileSprite(0, 0, this.MAP_W * TILE, this.MAP_H * TILE, 'grass').setOrigin(0);
     this.blockers = this.physics.add.staticGroup();
@@ -394,6 +420,27 @@ export default class WorldScene extends Phaser.Scene {
           fontSize: '11px', color: '#e0f2fe', fontStyle: 'bold',
         }).setOrigin(0.5).setDepth(2);
       }
+    }
+
+    // 護城河
+    const moat = this.level.moat || [];
+    this.moatSet = new Set();
+    for (const m of moat) {
+      const cx = m.x * TILE + TILE / 2;
+      const cy = m.y * TILE + TILE / 2;
+      this.moatSet.add(`${m.x},${m.y}`);
+      // 水面
+      this.add.image(cx, cy, 'water').setDepth(1);
+      // 兩側河岸
+      if (!this.isRoad(m.x - 1, m.y) && !moat.some(o => o.x === m.x - 1 && o.y === m.y)) {
+        this.add.image((m.x - 1) * TILE + TILE / 2, cy, 'riverbank').setAlpha(0.6).setDepth(1);
+      }
+      if (!this.isRoad(m.x + 1, m.y) && !moat.some(o => o.x === m.x + 1 && o.y === m.y)) {
+        this.add.image((m.x + 1) * TILE + TILE / 2, cy, 'riverbank').setAlpha(0.6).setDepth(1);
+      }
+      // 護城河是障礙物（不能騎過去）
+      const block = this.add.rectangle(cx, cy, TILE, TILE, 0x000000, 0).setDepth(0);
+      this.blockers.add(block);
     }
 
     // 特殊地標（如東門圓環）
@@ -839,6 +886,18 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.keys.W.isDown || this.virtual.up) vy -= speed;
     if (this.cursors.down.isDown || this.keys.S.isDown || this.virtual.down) vy += speed;
     if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+
+    // 道路限制：預測下一格位置，如果不是道路就擋住
+    const dt = 1 / 60;
+    const nextX = this.player.x + vx * dt * 3;
+    const nextY = this.player.y + vy * dt * 3;
+    if (!this.canPlayerEnter(nextX, nextY)) {
+      // 嘗試只保留一個方向
+      const canH = this.canPlayerEnter(this.player.x + vx * dt * 3, this.player.y);
+      const canV = this.canPlayerEnter(this.player.x, this.player.y + vy * dt * 3);
+      if (!canH) vx = 0;
+      if (!canV) vy = 0;
+    }
     this.player.setVelocity(vx, vy);
 
     // 轉向（用 flip 代替 angle 180）
