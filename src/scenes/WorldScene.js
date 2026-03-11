@@ -1,16 +1,109 @@
 import Phaser from 'phaser';
 
 const TILE = 64;
-const MAP_W = 40;
-const MAP_H = 28;
-const ROAD_COLS = [8, 9, 18, 19, 28, 29]; // 雙線道
-const ROAD_ROWS = [6, 7, 14, 15, 22, 23];
-const NPC_TYPES = ['npcTaxi', 'npcPolice', 'npcAmbulance', 'npcSedan', 'npcRed', 'npcGreen', 'npcBus', 'npcTruck', 'npcSports'];
+// 台灣街頭：大量機車 + 各種車輛
+const NPC_TYPES = [
+  'scooter', 'scooter', 'scooter', 'scooter', 'scooter',  // 機車佔多數（台灣特色）
+  'npcTaxi', 'npcPolice', 'npcSedan', 'npcRed', 'npcGreen',
+  'npcBus', 'npcTruck', 'npcSports', 'npcAmbulance',
+];
+
+// ===== 台灣城市關卡定義 =====
+// 根據真實新竹市區路網設計
+// 地圖方位：上=北(頭前溪)，下=南(光復路往清大)，左=西(車站)，右=東(巨城/園區)
+//
+// 真實對照：
+// - 新竹車站在市中心偏西（左側）
+// - 城隍廟在車站東北方，中山路上
+// - 東門圓環是中正路/中華路/東門街的大型圓環
+// - 巨城在東門圓環東邊，中央路上
+// - 清華大學在東南方，光復路二段
+// - 中正路從車站往東南延伸穿過東門圓環
+// - 經國路在西側南北向
+// - 光復路在南側東西橫貫
+const LEVELS = [
+  {
+    name: '新竹市區',
+    mapW: 52, mapH: 38,
+    hRoads: [
+      // === 主幹道 ===
+      { y: [3, 4], x1: 0, x2: 51 },       // 東大路/北大路（北側，頭前溪南岸）
+      { y: [11, 12], x1: 0, x2: 51 },      // 中華路（東西向主幹道，經過城隍廟南側）
+      { y: [19, 20], x1: 0, x2: 51 },      // 東門街/西大路（東門圓環橫向）
+      { y: [27, 28], x1: 0, x2: 51 },      // 光復路（南側大路，往清大方向）
+      { y: [35, 36], x1: 8, x2: 43 },      // 公道五路（最南端）
+      // === 次要道路 ===
+      { y: [7, 8], x1: 3, x2: 35 },        // 中山路（城隍廟前）
+      { y: [15, 16], x1: 10, x2: 43 },     // 勝利路/民族路
+      { y: [23, 24], x1: 5, x2: 30 },      // 林森路
+      { y: [31, 32], x1: 15, x2: 45 },     // 建功路
+    ],
+    vRoads: [
+      // === 主幹道 ===
+      { x: [5, 6], y1: 0, y2: 37 },        // 經國路（西側南北大路）
+      { x: [14, 15], y1: 0, y2: 37 },       // 中正路（車站到東門圓環的核心路）
+      { x: [24, 25], y1: 0, y2: 37 },       // 中央路/東門街（東門圓環往東）
+      { x: [34, 35], y1: 0, y2: 37 },       // 食品路/光華街
+      { x: [44, 45], y1: 0, y2: 37 },       // 園區路（往科學園區）
+      // === 次要道路 ===
+      { x: [9, 10], y1: 3, y2: 20 },        // 北門街/長安街
+      { x: [19, 20], y1: 7, y2: 28 },       // 東門街/中山路交叉
+      { x: [29, 30], y1: 3, y2: 32 },       // 民族路
+      { x: [39, 40], y1: 7, y2: 36 },       // 建中路
+    ],
+    // POI 放在路旁建築區（非馬路上）
+    pois: [
+      { key: 'poi1', gridX: 12, gridY: 9, texture: 'poiTemple', label: '城隍廟', color: 0xef4444 },
+      { key: 'poi2', gridX: 12, gridY: 18, texture: 'poiStation', label: '新竹車站', color: 0x3b82f6 },
+      { key: 'poi3', gridX: 42, gridY: 14, texture: 'poiUniversity', label: '清華大學', color: 0x8b5cf6 },
+      { key: 'poi4', gridX: 42, gridY: 30, texture: 'poiOffice', label: '科學園區公司', color: 0x22c55e },
+    ],
+    // 東門圓環位置（特殊地標）
+    landmarks: [
+      { x: 21, y: 18, label: '東門圓環', radius: 2 },
+    ],
+    quests: [
+      '📋 任務1：去城隍廟吃米粉貢丸當早餐',
+      '📋 任務2：騎到新竹車站接包裹',
+      '📋 任務3：去清大送文件',
+      '📋 任務4：趕去科學園區公司打卡上班！',
+      '🎉 新竹關完成！你是風城最強通勤王！',
+    ],
+    roadLabels: [
+      { text: '東大路', x: 26, y: 3 },
+      { text: '中華路', x: 26, y: 11 },
+      { text: '東門街', x: 12, y: 19 },
+      { text: '西大路', x: 38, y: 19 },
+      { text: '光復路', x: 26, y: 27 },
+      { text: '公道五', x: 26, y: 35 },
+      { text: '中山路', x: 19, y: 7 },
+      { text: '勝利路', x: 26, y: 15 },
+      { text: '林森路', x: 17, y: 23 },
+      { text: '建功路', x: 30, y: 31 },
+      { text: '經國路', x: 5, y: 22 },
+      { text: '中正路', x: 14, y: 14 },
+      { text: '中央路', x: 24, y: 14 },
+      { text: '食品路', x: 34, y: 22 },
+      { text: '園區路', x: 44, y: 22 },
+      { text: '北門街', x: 9, y: 10 },
+      { text: '民族路', x: 29, y: 18 },
+      { text: '建中路', x: 39, y: 22 },
+    ],
+    playerStart: { x: 16, y: 14 },  // 從中正路/勝利路附近出發
+    deadlineMs: 200000,  // 地圖更大，給多一點時間
+    rainAfterStage: 2,
+  },
+];
 
 export default class WorldScene extends Phaser.Scene {
   constructor() { super('WorldScene'); }
 
   create() {
+    this.levelIndex = this.registry.get('levelIndex') || 0;
+    this.level = LEVELS[this.levelIndex];
+    this.MAP_W = this.level.mapW;
+    this.MAP_H = this.level.mapH;
+
     this.score = 0;
     this.combo = 1;
     this.lastCoinTime = 0;
@@ -21,6 +114,12 @@ export default class WorldScene extends Phaser.Scene {
     this.gameWon = false;
     this.baseSpeed = 200;
     this.npcHonkTimer = 0;
+
+    // 預先計算道路格子集合（用於快速查詢）
+    this.roadSet = new Set();
+    this.hLanes = []; // 水平車道 { y, x1, x2 }（單行）
+    this.vLanes = []; // 垂直車道 { x, y1, y2 }（單行）
+    this.buildRoadSets();
 
     // 建構地圖
     this.buildMap();
@@ -34,40 +133,39 @@ export default class WorldScene extends Phaser.Scene {
     // 放置金幣和道具
     this.spawnCoins();
     this.spawnPowerups();
-
-    // 生成 NPC 車輛
     this.spawnNPCCars();
 
     // 玩家
-    this.player = this.physics.add.sprite(8 * TILE + 32, 6 * TILE + 32, 'scooter').setScale(3);
-    this.player.setAngle(90);
+    const ps = this.level.playerStart;
+    this.player = this.physics.add.sprite(ps.x * TILE + 32, ps.y * TILE + 32, 'scooter').setScale(3);
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(12, 8).setOffset(2, 1);
     this.player.setDepth(5);
+    this.playerDir = 'right';
+    this.updatePlayerRotation();
 
-    // 尾焰粒子效果
+    // 尾焰粒子
     this.exhaust = this.add.particles(0, 0, 'spark', {
-      follow: this.player,
-      followOffset: { x: -10, y: 0 },
-      lifespan: 300,
-      speed: { min: 20, max: 60 },
-      scale: { start: 0.8, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      quantity: 1,
-      emitting: false,
+      follow: this.player, followOffset: { x: -10, y: 0 },
+      lifespan: 300, speed: { min: 20, max: 60 },
+      scale: { start: 0.8, end: 0 }, alpha: { start: 0.6, end: 0 },
+      quantity: 1, emitting: false,
       tint: [0xff6b35, 0xfbbf24, 0xff4444],
     });
 
-    this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
-    this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
+    this.physics.world.setBounds(0, 0, this.MAP_W * TILE, this.MAP_H * TILE);
+    this.cameras.main.setBounds(0, 0, this.MAP_W * TILE, this.MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.physics.add.collider(this.player, this.blockers);
 
-    // 碰撞偵測
+    // 碰撞
     this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.player, this.boosts, this.collectBoost, null, this);
     this.physics.add.overlap(this.player, this.timeBonuses, this.collectTime, null, this);
-    this.physics.add.overlap(this.player, this.npcCars, this.hitByCar, null, this);
+    this.physics.add.collider(this.player, this.npcCars, this.hitByCar, null, this);
+    // NPC 車輛之間也會碰撞（不能互穿）
+    this.physics.add.collider(this.npcCars, this.npcCars);
+    this.physics.add.collider(this.npcCars, this.blockers);
 
     // 操控
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -88,17 +186,13 @@ export default class WorldScene extends Phaser.Scene {
       gameover: this.sound.add('sfxGameover', { volume: 0.5 }),
     };
 
-    // 任務系統
-    this.questState = {
-      stage: 0,
-      startAt: this.time.now,
-      deadlineMs: 180000,
-    };
+    // 任務
+    this.questState = { stage: 0, startAt: this.time.now, deadlineMs: this.level.deadlineMs };
 
     // HUD
     this.setupHUD();
 
-    // 目標方向箭頭（螢幕邊緣指向當前任務目標）
+    // 方向箭頭
     this.arrow = this.add.triangle(0, 0, 0, 12, 20, 0, 0, -12, 0xfbbf24)
       .setScrollFactor(0).setDepth(12).setAlpha(0.85);
     this.arrowDist = this.add.text(0, 0, '', {
@@ -108,138 +202,249 @@ export default class WorldScene extends Phaser.Scene {
 
     // 雨
     this.rain = this.add.particles(0, 0, 'rain', {
-      x: { min: 0, max: MAP_W * TILE },
-      y: 0, lifespan: 800,
-      speedY: { min: 600, max: 900 },
-      speedX: { min: -50, max: -100 },
-      scale: { start: 0.04, end: 0.02 },
-      alpha: { start: 0.4, end: 0 },
-      quantity: 4,
-      emitting: false,
+      x: { min: 0, max: this.MAP_W * TILE }, y: 0, lifespan: 800,
+      speedY: { min: 600, max: 900 }, speedX: { min: -50, max: -100 },
+      scale: { start: 0.04, end: 0.02 }, alpha: { start: 0.4, end: 0 },
+      quantity: 4, emitting: false,
     });
     this.rain.setScrollFactor(0.9).setDepth(15);
 
-    // 定時重生金幣和道具
+    // 定時事件
     this.time.addEvent({ delay: 8000, callback: this.spawnCoins, callbackScope: this, loop: true });
     this.time.addEvent({ delay: 15000, callback: this.spawnPowerups, callbackScope: this, loop: true });
-
-    // NPC 定時補充
-    this.time.addEvent({ delay: 5000, callback: this.spawnNPCCars, callbackScope: this, loop: true });
-
-    // 隨機事件
+    this.time.addEvent({ delay: 3000, callback: this.spawnNPCCars, callbackScope: this, loop: true });
     this.time.addEvent({ delay: 20000, callback: this.randomEvent, callbackScope: this, loop: true });
 
     this.setStage(0);
+    this.showLevelIntro();
+  }
+
+  showLevelIntro() {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+
+    // 半透明黑背景
+    const bg = this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.65)
+      .setScrollFactor(0).setDepth(50);
+
+    const levelNum = this.add.text(cx, cy - 40, `第 ${this.levelIndex + 1} 關`, {
+      fontSize: '32px', color: '#93c5fd', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(51).setAlpha(0);
+
+    const levelName = this.add.text(cx, cy + 20, this.level.name, {
+      fontSize: '52px', color: '#fbbf24', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(51).setAlpha(0);
+
+    // 淡入動畫
+    this.tweens.add({
+      targets: levelNum, alpha: 1, y: cy - 30, duration: 600, ease: 'Power2',
+    });
+    this.tweens.add({
+      targets: levelName, alpha: 1, y: cy + 15, duration: 800, ease: 'Power2', delay: 300,
+    });
+
+    // 2.5 秒後淡出
+    this.time.delayedCall(2500, () => {
+      this.tweens.add({
+        targets: [bg, levelNum, levelName], alpha: 0, duration: 500,
+        onComplete: () => { bg.destroy(); levelNum.destroy(); levelName.destroy(); },
+      });
+    });
+
+    // 開場期間暫停玩家移動
+    this.input.keyboard.enabled = false;
+    this.time.delayedCall(3000, () => {
+      this.input.keyboard.enabled = true;
+    });
+  }
+
+  // 預先計算所有道路格子和車道
+  buildRoadSets() {
+    const level = this.level;
+    for (const hr of level.hRoads) {
+      for (const row of hr.y) {
+        for (let x = hr.x1; x <= hr.x2; x++) {
+          this.roadSet.add(`${x},${row}`);
+        }
+        this.hLanes.push({ y: row, x1: hr.x1, x2: hr.x2 });
+      }
+    }
+    for (const vr of level.vRoads) {
+      for (const col of vr.x) {
+        for (let y = vr.y1; y <= vr.y2; y++) {
+          this.roadSet.add(`${col},${y}`);
+        }
+        this.vLanes.push({ x: col, y1: vr.y1, y2: vr.y2 });
+      }
+    }
+  }
+
+  isRoad(x, y) {
+    return this.roadSet.has(`${x},${y}`);
   }
 
   buildMap() {
-    this.add.tileSprite(0, 0, MAP_W * TILE, MAP_H * TILE, 'grass').setOrigin(0);
+    this.add.tileSprite(0, 0, this.MAP_W * TILE, this.MAP_H * TILE, 'grass').setOrigin(0);
     this.blockers = this.physics.add.staticGroup();
     this.interactives = this.physics.add.staticGroup();
 
-    const roadColSet = new Set(ROAD_COLS);
-    const roadRowSet = new Set(ROAD_ROWS);
-
-    for (let y = 0; y < MAP_H; y++) {
-      for (let x = 0; x < MAP_W; x++) {
+    // 繪製道路和環境
+    for (let y = 0; y < this.MAP_H; y++) {
+      for (let x = 0; x < this.MAP_W; x++) {
         const cx = x * TILE + TILE / 2;
         const cy = y * TILE + TILE / 2;
-        const isV = roadColSet.has(x);
-        const isH = roadRowSet.has(y);
+        const onRoad = this.isRoad(x, y);
 
-        if (isV && isH) {
-          this.add.image(cx, cy, 'road-x');
-        } else if (isV) {
-          this.add.image(cx, cy, 'road-v');
-        } else if (isH) {
-          this.add.image(cx, cy, 'road-h');
+        if (onRoad) {
+          // 判斷是十字路口、垂直還是水平路
+          const hasH = this.isRoad(x - 1, y) || this.isRoad(x + 1, y);
+          const hasV = this.isRoad(x, y - 1) || this.isRoad(x, y + 1);
+          if (hasH && hasV) {
+            this.add.image(cx, cy, 'road-x');
+          } else if (hasV) {
+            this.add.image(cx, cy, 'road-v');
+          } else {
+            this.add.image(cx, cy, 'road-h');
+          }
         } else {
           // 路旁人行道
-          const nearRoadV = roadColSet.has(x - 1) || roadColSet.has(x + 1);
-          const nearRoadH = roadRowSet.has(y - 1) || roadRowSet.has(y + 1);
-          if (nearRoadV || nearRoadH) {
+          const nearRoad = this.isRoad(x - 1, y) || this.isRoad(x + 1, y) ||
+                           this.isRoad(x, y - 1) || this.isRoad(x, y + 1);
+          if (nearRoad) {
             this.add.image(cx, cy, 'sidewalk').setAlpha(0.7);
           }
 
-          // 建築物（離道路遠一些）
-          if (!nearRoadV && !nearRoadH && (x + y * 3) % 5 === 0 && x > 1 && x < MAP_W - 2 && y > 1 && y < MAP_H - 2) {
-            const bType = (x * 7 + y * 13) % 5;
-            const b = this.add.image(cx, cy, `building${bType}`);
-            this.blockers.add(b);
+          // 路旁加樹木裝飾
+          if (nearRoad) {
+            const treeHash = (x * 13 + y * 7) % 9;
+            if (treeHash === 0) {
+              this.add.image(cx, cy, 'tree').setScale(3).setDepth(2).setAlpha(0.9);
+            }
+          }
+
+          // 建築物（不在路邊）
+          if (!nearRoad && x > 0 && x < this.MAP_W - 1 && y > 0 && y < this.MAP_H - 1) {
+            const hash = (x * 31 + y * 17) % 7;
+            if (hash === 0 || hash === 3) {
+              const bType = (x * 7 + y * 13) % 5;
+              const b = this.add.image(cx, cy, `building${bType}`);
+              this.blockers.add(b);
+            }
           }
         }
       }
     }
 
-    // 紅綠燈放在路口
-    const intersections = [];
-    for (const col of [8, 18, 28]) {
-      for (const row of [6, 14, 22]) {
-        intersections.push({ x: col, y: row });
-        this.add.image((col - 1) * TILE + TILE / 2, (row - 1) * TILE + TILE / 2, 'trafficLight')
-          .setScale(2).setAlpha(0.9).setDepth(3);
+    // 在主要路口放紅綠燈
+    this.placeTrafficLights();
+
+    // 放置路名標示
+    this.placeRoadLabels();
+
+    // POI
+    this.poiKeys = [];
+    this.poi = {};
+    for (const p of this.level.pois) {
+      this.poi[p.key] = this.createPOI(p.gridX, p.gridY, p.texture, p.label, p.color);
+      this.poiKeys.push(p.key);
+    }
+    Object.values(this.poi).forEach((p) => this.interactives.add(p.sprite));
+  }
+
+  placeTrafficLights() {
+    // 只在主幹道交叉口放紅綠燈（前5條水平 x 前5條垂直 = 主要路口）
+    const mainHRows = [];
+    const mainVCols = [];
+    // 只取前5條主幹道的第一個 y / x
+    for (let i = 0; i < Math.min(5, this.level.hRoads.length); i++) {
+      mainHRows.push(this.level.hRoads[i].y[0]);
+    }
+    for (let i = 0; i < Math.min(5, this.level.vRoads.length); i++) {
+      mainVCols.push(this.level.vRoads[i].x[0]);
+    }
+    const placed = new Set();
+    for (const col of mainVCols) {
+      for (const row of mainHRows) {
+        if (!this.isRoad(col, row)) continue;
+        const key = `${Math.floor(col / 5)},${Math.floor(row / 5)}`;
+        if (placed.has(key)) continue; // 避免太密集
+        placed.add(key);
+        // 放在路口角落
+        const tx = col - 1, ty = row - 1;
+        if (tx >= 0 && ty >= 0 && !this.isRoad(tx, ty)) {
+          this.add.image(tx * TILE + TILE / 2, ty * TILE + TILE / 2, 'trafficLight')
+            .setScale(1.8).setAlpha(0.85).setDepth(3);
+        }
+      }
+    }
+  }
+
+  placeRoadLabels() {
+    const labels = this.level.roadLabels || [];
+    for (const l of labels) {
+      if (l.x < this.MAP_W && l.y < this.MAP_H) {
+        const lx = l.x * TILE + TILE / 2;
+        const ly = l.y * TILE + TILE / 2;
+        // 路標牌背景
+        this.add.rectangle(lx, ly, 56, 18, 0x1e3a5f, 0.85).setDepth(2);
+        this.add.rectangle(lx, ly, 54, 16, 0x1e3a5f, 0).setStrokeStyle(1, 0x60a5fa, 0.6).setDepth(2);
+        this.add.text(lx, ly, l.text, {
+          fontSize: '11px', color: '#e0f2fe', fontStyle: 'bold',
+        }).setOrigin(0.5).setDepth(2);
       }
     }
 
-    // POI（興趣點）
-    this.poi = {
-      shop: this.createPOI(18, 6, 'poiShopReal', '便利店', 0xfbbf24),
-      customer: this.createPOI(8, 22, 'poiCustomerReal', '客戶', 0x3b82f6),
-      office: this.createPOI(28, 22, 'poiOfficeReal', '公司', 0x22c55e),
-      police: this.createPOI(18, 14, 'poiPoliceReal', '警察局', 0xef4444),
-    };
-    Object.values(this.poi).forEach((p) => this.interactives.add(p.sprite));
+    // 特殊地標（如東門圓環）
+    const landmarks = this.level.landmarks || [];
+    for (const lm of landmarks) {
+      const cx = lm.x * TILE + TILE / 2;
+      const cy = lm.y * TILE + TILE / 2;
+      const r = (lm.radius || 1) * TILE;
+      // 圓環外圈
+      const circle = this.add.circle(cx, cy, r, 0x4a5568, 0.6).setDepth(2);
+      this.add.circle(cx, cy, r - 8, 0x3f3f46, 0.8).setDepth(2);
+      // 圓環中心綠地
+      this.add.circle(cx, cy, r * 0.4, 0x4a8f3a, 0.7).setDepth(2);
+      // 標籤
+      this.add.text(cx, cy - r - 12, lm.label, {
+        fontSize: '13px', color: '#fbbf24', fontStyle: 'bold',
+        stroke: '#000', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(3);
+    }
   }
 
   createPOI(gridX, gridY, texture, label, color) {
     const x = gridX * TILE + TILE / 2;
     const y = gridY * TILE + TILE / 2;
-    const sprite = this.add.image(x, y, texture).setScale(2.5).setDepth(4);
+    const sprite = this.add.image(x, y, texture).setScale(1.6).setDepth(4);
 
-    // 發光圈
-    const glow = this.add.circle(x, y, 35, color, 0.2).setDepth(3);
+    const glow = this.add.circle(x, y, 36, color, 0.25).setDepth(3);
     this.tweens.add({
-      targets: glow, alpha: { from: 0.1, to: 0.35 }, scale: { from: 0.9, to: 1.1 },
+      targets: glow, alpha: { from: 0.1, to: 0.4 }, scale: { from: 0.9, to: 1.2 },
       duration: 800, yoyo: true, repeat: -1,
     });
 
-    // 標籤
-    this.add.text(x, y - 40, label, {
-      fontSize: '14px', color: '#fff', backgroundColor: `rgba(0,0,0,0.6)`,
-      padding: { x: 4, y: 2 },
+    this.add.text(x, y - 45, label, {
+      fontSize: '15px', color: '#fff', fontStyle: 'bold',
+      backgroundColor: 'rgba(0,0,0,0.7)', padding: { x: 6, y: 3 },
     }).setOrigin(0.5).setDepth(4);
 
     return { sprite, glow, gridX, gridY };
   }
 
   spawnCoins() {
-    // 清除舊金幣（已被收集的不在了）
-    const existingCount = this.coins.countActive();
-    if (existingCount > 30) return;
-
-    const roadColSet = new Set(ROAD_COLS);
-    const roadRowSet = new Set(ROAD_ROWS);
-
-    for (let i = 0; i < 15; i++) {
-      // 隨機在道路上放金幣
-      const useHorizontal = Math.random() > 0.5;
-      let x, y;
-      if (useHorizontal) {
-        x = Phaser.Math.Between(2, MAP_W - 3);
-        const rows = [6, 7, 14, 15, 22, 23];
-        y = rows[Phaser.Math.Between(0, rows.length - 1)];
-      } else {
-        const cols = [8, 9, 18, 19, 28, 29];
-        x = cols[Phaser.Math.Between(0, cols.length - 1)];
-        y = Phaser.Math.Between(2, MAP_H - 3);
-      }
-      const cx = x * TILE + TILE / 2;
-      const cy = y * TILE + TILE / 2;
-
+    if (this.coins.countActive() > 40) return;
+    // 在道路上隨機撒金幣
+    const roadCells = Array.from(this.roadSet);
+    for (let i = 0; i < 20; i++) {
+      const cell = roadCells[Phaser.Math.Between(0, roadCells.length - 1)];
+      const [gx, gy] = cell.split(',').map(Number);
+      const cx = gx * TILE + TILE / 2;
+      const cy = gy * TILE + TILE / 2;
       const coin = this.coins.create(cx, cy, 'coin').setScale(1.5).setDepth(3);
       coin.body.setAllowGravity(false);
-
-      // 金幣浮動動畫
       this.tweens.add({
         targets: coin, y: cy - 5, duration: 600,
         yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
@@ -250,99 +455,98 @@ export default class WorldScene extends Phaser.Scene {
   spawnPowerups() {
     if (this.boosts.countActive() > 3) return;
     if (this.timeBonuses.countActive() > 3) return;
+    const roadCells = Array.from(this.roadSet);
 
-    // 加速道具
     for (let i = 0; i < 2; i++) {
-      const x = Phaser.Math.Between(3, MAP_W - 4) * TILE + TILE / 2;
-      const y = Phaser.Math.Between(3, MAP_H - 4) * TILE + TILE / 2;
-      const b = this.boosts.create(x, y, 'boostPickup').setScale(1.8).setDepth(3);
+      const cell = roadCells[Phaser.Math.Between(0, roadCells.length - 1)];
+      const [gx, gy] = cell.split(',').map(Number);
+      const b = this.boosts.create(gx * TILE + TILE / 2, gy * TILE + TILE / 2, 'boostPickup').setScale(1.8).setDepth(3);
       b.body.setAllowGravity(false);
-      this.tweens.add({
-        targets: b, angle: 360, duration: 2000, repeat: -1,
-      });
+      this.tweens.add({ targets: b, angle: 360, duration: 2000, repeat: -1 });
     }
-
-    // 時間加成
     for (let i = 0; i < 2; i++) {
-      const x = Phaser.Math.Between(3, MAP_W - 4) * TILE + TILE / 2;
-      const y = Phaser.Math.Between(3, MAP_H - 4) * TILE + TILE / 2;
-      const t = this.timeBonuses.create(x, y, 'timePickup').setScale(1.8).setDepth(3);
+      const cell = roadCells[Phaser.Math.Between(0, roadCells.length - 1)];
+      const [gx, gy] = cell.split(',').map(Number);
+      const t = this.timeBonuses.create(gx * TILE + TILE / 2, gy * TILE + TILE / 2, 'timePickup').setScale(1.8).setDepth(3);
       t.body.setAllowGravity(false);
-      this.tweens.add({
-        targets: t, scale: { from: 1.6, to: 2.0 }, duration: 500,
-        yoyo: true, repeat: -1,
-      });
+      this.tweens.add({ targets: t, scale: { from: 1.6, to: 2.0 }, duration: 500, yoyo: true, repeat: -1 });
     }
   }
 
   spawnNPCCars() {
-    const activeNPCs = this.npcCars.countActive();
-    if (activeNPCs > 12) return;
-
-    const toSpawn = Math.min(4, 14 - activeNPCs);
-    for (let i = 0; i < toSpawn; i++) {
-      this.spawnOneNPC();
-    }
+    if (this.npcCars.countActive() > 35) return;  // 台灣塞車感
+    const toSpawn = Math.min(8, 40 - this.npcCars.countActive());
+    for (let i = 0; i < toSpawn; i++) this.spawnOneNPC();
   }
 
   spawnOneNPC() {
     const type = NPC_TYPES[Phaser.Math.Between(0, NPC_TYPES.length - 1)];
     const horizontal = Math.random() > 0.5;
-    let x, y, vx, vy, angle;
+    let x, y, vx, vy, flipX, angle;
 
-    if (horizontal) {
-      const rows = [6, 7, 14, 15, 22, 23];
-      const row = rows[Phaser.Math.Between(0, rows.length - 1)];
-      const goRight = row % 2 === 0; // 偶數行往右，奇數行往左
-      x = goRight ? -50 : MAP_W * TILE + 50;
-      y = row * TILE + TILE / 2;
-      const speed = Phaser.Math.Between(80, 160);
+    if (horizontal && this.hLanes.length > 0) {
+      const lane = this.hLanes[Phaser.Math.Between(0, this.hLanes.length - 1)];
+      const goRight = lane.y % 2 === 0;
+      x = goRight ? (lane.x1 * TILE - 80) : (lane.x2 * TILE + 80);
+      y = lane.y * TILE + TILE / 2;
+      const speed = Phaser.Math.Between(80, 170);
       vx = goRight ? speed : -speed;
       vy = 0;
-      angle = goRight ? 0 : 180;
-    } else {
-      const cols = [8, 9, 18, 19, 28, 29];
-      const col = cols[Phaser.Math.Between(0, cols.length - 1)];
-      const goDown = col % 2 === 0; // 偶數列往下
-      x = col * TILE + TILE / 2;
-      y = goDown ? -50 : MAP_H * TILE + 50;
-      const speed = Phaser.Math.Between(80, 160);
+      flipX = !goRight; // 往左時翻轉 X
+      angle = 0; // 保持水平朝向，不旋轉
+    } else if (this.vLanes.length > 0) {
+      const lane = this.vLanes[Phaser.Math.Between(0, this.vLanes.length - 1)];
+      const goDown = lane.x % 2 === 0;
+      x = lane.x * TILE + TILE / 2;
+      y = goDown ? (lane.y1 * TILE - 80) : (lane.y2 * TILE + 80);
+      const speed = Phaser.Math.Between(80, 170);
       vx = 0;
       vy = goDown ? speed : -speed;
-      angle = goDown ? 90 : 270;
+      flipX = false;
+      angle = goDown ? 90 : -90; // 90度向下，-90度向上
+    } else {
+      return;
     }
 
     const car = this.npcCars.create(x, y, type);
-    car.setScale(2.2).setAngle(angle).setDepth(4);
+    const isScooter = type === 'scooter';
+    const bigTypes = ['npcBus', 'npcTruck', 'npcAmbulance'];
+    let scale;
+    if (isScooter) {
+      scale = 2.5;
+      // 機車速度更快、更靈活
+      vx *= Phaser.Math.FloatBetween(1.1, 1.5);
+      vy *= Phaser.Math.FloatBetween(1.1, 1.5);
+    } else if (bigTypes.includes(type)) {
+      scale = 2.5;
+    } else {
+      scale = 2.2;
+    }
+    car.setScale(scale).setAngle(angle).setFlipX(flipX).setDepth(4);
     car.body.setAllowGravity(false);
     car.setVelocity(vx, vy);
-    car.body.setSize(28, 12).setOffset(3, 1);
+    car.body.setSize(car.width * 0.7, car.height * 0.7);
+    // NPC 車輛質量大，不容易被推動
+    car.body.setImmovable(true);
+    car.body.pushable = false;
 
-    // 超出地圖邊界後自動銷毀
-    this.time.delayedCall(25000, () => {
-      if (car.active) car.destroy();
-    });
+    this.time.delayedCall(30000, () => { if (car.active) car.destroy(); });
   }
 
   collectCoin(player, coin) {
     const now = this.time.now;
-    // 連擊系統：2秒內連續撿金幣 combo 增加
     if (now - this.lastCoinTime < 2000) {
       this.combo = Math.min(this.combo + 1, 10);
     } else {
       this.combo = 1;
     }
     this.lastCoinTime = now;
-
     const points = 10 * this.combo;
     this.score += points;
-
-    // 彈出分數文字
     this.showFloatingText(coin.x, coin.y - 20, `+${points}`, this.combo > 1 ? '#fbbf24' : '#fff');
     if (this.combo > 1) {
       this.showFloatingText(coin.x, coin.y - 40, `${this.combo}x COMBO!`, '#ff6b35');
     }
-
     this.sfx.coin.play();
     coin.destroy();
   }
@@ -355,60 +559,41 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   collectTime(player, timeBonus) {
-    this.questState.deadlineMs += 15000; // +15秒
+    this.questState.deadlineMs += 15000;
     this.showFloatingText(timeBonus.x, timeBonus.y - 20, '時間 +15s!', '#22c55e');
     this.sfx.powerup.play();
-
-    // 全螢幕綠色閃爍
     this.cameras.main.flash(300, 34, 197, 94, false);
     timeBonus.destroy();
   }
 
   hitByCar(player, car) {
     if (this.invincible || this.gameOver || this.gameWon) return;
-
-    // 碰撞！
     this.invincible = true;
     this.sfx.crash.play();
-
-    // 扣時間和分數
-    this.questState.deadlineMs -= 10000; // -10秒
+    this.questState.deadlineMs -= 10000;
     this.score = Math.max(0, this.score - 50);
     this.combo = 1;
 
-    // 爆炸效果
     const exp = this.add.sprite(player.x, player.y, 'exp0').setScale(0.6).setDepth(20);
     exp.play('explode');
     exp.on('animationcomplete', () => exp.destroy());
 
-    // 碰撞火花
     this.add.particles(player.x, player.y, 'spark', {
-      speed: { min: 100, max: 250 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 1.5, end: 0 },
-      lifespan: 400,
-      quantity: 15,
-      tint: [0xff4444, 0xfbbf24, 0xff6b35],
-      emitting: false,
+      speed: { min: 100, max: 250 }, angle: { min: 0, max: 360 },
+      scale: { start: 1.5, end: 0 }, lifespan: 400, quantity: 15,
+      tint: [0xff4444, 0xfbbf24, 0xff6b35], emitting: false,
     }).explode(15);
 
-    // 相機震動
     this.cameras.main.shake(300, 0.015);
     this.cameras.main.flash(200, 255, 0, 0, false);
-
     this.showFloatingText(player.x, player.y - 30, '-10秒! -50分!', '#ef4444');
 
-    // 玩家閃爍無敵
     this.tweens.add({
       targets: player, alpha: { from: 0.3, to: 1 },
       duration: 100, repeat: 10, yoyo: true,
-      onComplete: () => {
-        player.setAlpha(1);
-        this.invincible = false;
-      },
+      onComplete: () => { player.setAlpha(1); this.invincible = false; },
     });
 
-    // 擊退效果
     const knockAngle = Phaser.Math.Angle.Between(car.x, car.y, player.x, player.y);
     player.setVelocity(Math.cos(knockAngle) * 300, Math.sin(knockAngle) * 300);
   }
@@ -418,68 +603,53 @@ export default class WorldScene extends Phaser.Scene {
       fontSize: '18px', fontStyle: 'bold', color,
       stroke: '#000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(20);
-
-    this.tweens.add({
-      targets: t, y: y - 50, alpha: 0, duration: 1000,
-      onComplete: () => t.destroy(),
-    });
+    this.tweens.add({ targets: t, y: y - 50, alpha: 0, duration: 1000, onComplete: () => t.destroy() });
   }
 
   randomEvent() {
     if (this.gameOver || this.gameWon) return;
-
     const events = [
       () => {
-        // 救護車衝過來（高速）
+        // 救護車高速衝過
         this.showFloatingText(this.player.x, this.player.y - 60, '⚠ 救護車來了！小心！', '#ef4444');
-        const car = this.npcCars.create(-50, this.player.y, 'npcAmbulance');
-        car.setScale(0.5).setAngle(0).setDepth(4);
+        if (this.hLanes.length === 0) return;
+        const lane = this.hLanes[Phaser.Math.Between(0, this.hLanes.length - 1)];
+        const car = this.npcCars.create(lane.x1 * TILE - 80, this.player.y, 'npcAmbulance');
+        car.setScale(2.8).setDepth(4);
         car.body.setAllowGravity(false);
-        car.setVelocityX(300);
-        car.body.setSize(16, 24).setOffset(8, 10);
+        car.setVelocityX(350);
+        car.body.setSize(car.width * 0.7, car.height * 0.7);
         this.sfx.honk.play();
-        this.time.delayedCall(10000, () => { if (car.active) car.destroy(); });
+        this.time.delayedCall(12000, () => { if (car.active) car.destroy(); });
       },
       () => {
-        // 金幣雨
         this.showFloatingText(this.player.x, this.player.y - 60, '金幣雨！趕快撿！', '#fbbf24');
         for (let i = 0; i < 20; i++) {
-          const cx = this.player.x + Phaser.Math.Between(-200, 200);
-          const cy = this.player.y + Phaser.Math.Between(-200, 200);
+          const cx = this.player.x + Phaser.Math.Between(-250, 250);
+          const cy = this.player.y + Phaser.Math.Between(-250, 250);
           const coin = this.coins.create(cx, cy, 'coin').setScale(1.5).setDepth(3);
           coin.body.setAllowGravity(false);
           this.tweens.add({ targets: coin, y: cy - 5, duration: 600, yoyo: true, repeat: -1 });
         }
       },
       () => {
-        // 速度狂潮 - 所有NPC加速
         this.showFloatingText(this.player.x, this.player.y - 60, '⚠ 尖峰時段！車流加速！', '#f97316');
         this.npcCars.getChildren().forEach(c => {
-          if (c.active) {
-            c.body.velocity.x *= 1.8;
-            c.body.velocity.y *= 1.8;
-          }
+          if (c.active) { c.body.velocity.x *= 1.8; c.body.velocity.y *= 1.8; }
         });
-        // 10秒後恢復
         this.time.delayedCall(10000, () => {
           this.npcCars.getChildren().forEach(c => {
-            if (c.active) {
-              c.body.velocity.x /= 1.8;
-              c.body.velocity.y /= 1.8;
-            }
+            if (c.active) { c.body.velocity.x /= 1.8; c.body.velocity.y /= 1.8; }
           });
         });
       },
     ];
-
-    const event = events[Phaser.Math.Between(0, events.length - 1)];
-    event();
+    events[Phaser.Math.Between(0, events.length - 1)]();
   }
 
   setupVirtualControls() {
     this.virtual = { up: false, down: false, left: false, right: false, interact: false, boost: false };
     const btnStyle = { fontSize: '28px', color: '#fff', backgroundColor: 'rgba(0,0,0,0.4)', padding: { x: 14, y: 10 } };
-
     const mkBtn = (x, y, label, keyName) => {
       const b = this.add.text(x, y, label, btnStyle).setScrollFactor(0).setDepth(20).setInteractive({ useHandCursor: true });
       b.on('pointerdown', () => this.virtual[keyName] = true);
@@ -488,90 +658,67 @@ export default class WorldScene extends Phaser.Scene {
       b.on('pointerupoutside', () => this.virtual[keyName] = false);
       return b;
     };
-
-    const h = this.scale.height;
-    const w = this.scale.width;
+    const h = this.scale.height, w = this.scale.width;
     mkBtn(24, h - 130, '◀', 'left');
     mkBtn(88, h - 194, '▲', 'up');
     mkBtn(88, h - 66, '▼', 'down');
     mkBtn(152, h - 130, '▶', 'right');
-
-    const btnE = mkBtn(w - 90, h - 120, 'E', 'interact');
-    btnE.setStyle({ fontSize: '30px', backgroundColor: 'rgba(34,197,94,0.5)' });
-
-    const btnBoost = mkBtn(w - 90, h - 190, '⚡', 'boost');
-    btnBoost.setStyle({ fontSize: '26px', backgroundColor: 'rgba(59,130,246,0.5)' });
+    mkBtn(w - 90, h - 120, 'E', 'interact').setStyle({ fontSize: '30px', backgroundColor: 'rgba(34,197,94,0.5)' });
+    mkBtn(w - 90, h - 190, '⚡', 'boost').setStyle({ fontSize: '26px', backgroundColor: 'rgba(59,130,246,0.5)' });
   }
 
   setupHUD() {
-    // 上方 HUD 面板
+    // 關卡名稱
+    this.add.text(this.scale.width / 2, 8, `🏙 ${this.level.name}`, {
+      fontSize: '16px', color: '#93c5fd', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(10);
+
     this.hud = this.add.text(20, 16, '', {
       fontSize: '18px', color: '#fff',
-      backgroundColor: 'rgba(0,0,0,0.55)', padding: { x: 12, y: 8 },
-      lineSpacing: 4,
+      backgroundColor: 'rgba(0,0,0,0.55)', padding: { x: 12, y: 8 }, lineSpacing: 4,
     }).setScrollFactor(0).setDepth(10);
 
-    // 分數顯示（右上角）
     this.scoreText = this.add.text(this.scale.width - 20, 16, '', {
       fontSize: '22px', color: '#fbbf24', fontStyle: 'bold',
       backgroundColor: 'rgba(0,0,0,0.55)', padding: { x: 12, y: 8 },
     }).setScrollFactor(0).setDepth(10).setOrigin(1, 0);
 
-    // 任務提示
     this.msg = this.add.text(20, 100, '', {
       fontSize: '18px', color: '#fde68a',
       backgroundColor: 'rgba(0,0,0,0.55)', padding: { x: 12, y: 8 },
     }).setScrollFactor(0).setDepth(10);
 
-    // 加速條
     this.boostBarBg = this.add.rectangle(this.scale.width / 2, this.scale.height - 20, 200, 12, 0x1e293b, 0.7)
       .setScrollFactor(0).setDepth(10);
     this.boostBar = this.add.rectangle(this.scale.width / 2, this.scale.height - 20, 200, 12, 0x3b82f6, 0.9)
       .setScrollFactor(0).setDepth(10);
-    this.boostLabel = this.add.text(this.scale.width / 2, this.scale.height - 36, '加速 [SPACE]', {
+    this.add.text(this.scale.width / 2, this.scale.height - 36, '加速 [SPACE]', {
       fontSize: '12px', color: '#93c5fd',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
 
-    // 小地圖
     this.setupMinimap();
   }
 
   setupMinimap() {
-    const mmW = 150;
-    const mmH = 105;
-    const mmX = this.scale.width - mmW - 10;
-    const mmY = 60;
-
-    this.minimapBg = this.add.rectangle(mmX + mmW / 2, mmY + mmH / 2, mmW, mmH, 0x1e293b, 0.7)
+    const mmW = 160, mmH = 115;
+    const mmX = this.scale.width - mmW - 10, mmY = 55;
+    this.minimapBg = this.add.rectangle(mmX + mmW / 2, mmY + mmH / 2, mmW, mmH, 0x1e293b, 0.75)
       .setScrollFactor(0).setDepth(9).setStrokeStyle(1, 0x475569);
+    this.minimapDot = this.add.circle(0, 0, 3, 0x22c55e).setScrollFactor(0).setDepth(10);
 
-    // 小地圖上的玩家點
-    this.minimapDot = this.add.circle(0, 0, 3, 0x22c55e)
-      .setScrollFactor(0).setDepth(10);
-
-    // 小地圖上的 POI 點
     this.minimapPOIs = {};
-    const poiColors = { shop: 0xfbbf24, customer: 0x3b82f6, office: 0x22c55e, police: 0xef4444 };
-    for (const [name, poi] of Object.entries(this.poi)) {
-      const mx = mmX + (poi.gridX / MAP_W) * mmW;
-      const my = mmY + (poi.gridY / MAP_H) * mmH;
-      this.minimapPOIs[name] = this.add.circle(mx, my, 3, poiColors[name])
-        .setScrollFactor(0).setDepth(10);
+    for (const p of this.level.pois) {
+      const mx = mmX + (p.gridX / this.MAP_W) * mmW;
+      const my = mmY + (p.gridY / this.MAP_H) * mmH;
+      this.minimapPOIs[p.key] = this.add.circle(mx, my, 3, p.color).setScrollFactor(0).setDepth(10);
     }
-
     this.mmX = mmX; this.mmY = mmY; this.mmW = mmW; this.mmH = mmH;
   }
 
   setStage(stage) {
     this.questState.stage = stage;
-    const stages = [
-      '📋 任務1：去便利店買早餐',
-      '📋 任務2：把文件送到客戶端',
-      '📋 任務3：去公司打卡',
-      '📋 任務4：去警察局解除罰單',
-      '🎉 任務完成！你是新竹最強通勤王！',
-    ];
-    this.msg.setText(stages[Math.min(stage, stages.length - 1)]);
+    this.msg.setText(this.level.quests[Math.min(stage, this.level.quests.length - 1)]);
 
     if (stage > 0 && stage < 5) {
       this.sfx.interact.play();
@@ -579,14 +726,11 @@ export default class WorldScene extends Phaser.Scene {
       this.showFloatingText(this.player.x, this.player.y - 50, `任務完成 +${100 * stage}分！`, '#22c55e');
       this.cameras.main.flash(300, 34, 197, 94, false);
     }
-
-    // 任務2完成後下雨
-    if (stage === 2) {
+    if (stage === this.level.rainAfterStage) {
       this.rain.start();
-      this.showFloatingText(this.player.x, this.player.y - 70, '下雨了！路滑小心！', '#93c5fd');
-      this.baseSpeed = 160; // 下雨減速
+      this.showFloatingText(this.player.x, this.player.y - 70, '下雨了！新竹風大路滑小心！', '#93c5fd');
+      this.baseSpeed = 160;
     }
-    // 任務4完成停雨
     if (stage === 4) {
       this.rain.stop();
       this.baseSpeed = 200;
@@ -597,10 +741,13 @@ export default class WorldScene extends Phaser.Scene {
 
   handleInteract(target) {
     const stage = this.questState.stage;
-    if (target === this.poi.shop.sprite && stage === 0) { this.setStage(1); return; }
-    if (target === this.poi.customer.sprite && stage === 1) { this.setStage(2); return; }
-    if (target === this.poi.office.sprite && stage === 2) { this.setStage(3); return; }
-    if (target === this.poi.police.sprite && stage === 3) { this.setStage(4); return; }
+    const poiList = this.level.pois;
+    for (let i = 0; i < poiList.length; i++) {
+      if (target === this.poi[poiList[i].key].sprite && stage === i) {
+        this.setStage(i + 1);
+        return;
+      }
+    }
     this.msg.setText('⚠ 先照任務順序跑！');
   }
 
@@ -609,18 +756,14 @@ export default class WorldScene extends Phaser.Scene {
     const left = Math.max(0, this.questState.deadlineMs - (this.time.now - this.questState.startAt));
     const timeBonus = Math.floor(left / 1000) * 5;
     this.score += timeBonus;
-
-    const cx = this.scale.width / 2;
-    const cy = this.scale.height / 2;
+    const cx = this.scale.width / 2, cy = this.scale.height / 2;
 
     this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.6)
       .setScrollFactor(0).setDepth(30);
-
-    this.add.text(cx, cy - 80, '🏆 通勤王！', {
-      fontSize: '48px', color: '#fbbf24', fontStyle: 'bold',
+    this.add.text(cx, cy - 80, `🏆 ${this.level.name} 通勤王！`, {
+      fontSize: '42px', color: '#fbbf24', fontStyle: 'bold',
       stroke: '#000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-
     this.add.text(cx, cy, [
       `金幣分數：${this.score - timeBonus}`,
       `剩餘時間加成：+${timeBonus}`,
@@ -628,10 +771,8 @@ export default class WorldScene extends Phaser.Scene {
       '',
       '按 R 重新開始',
     ].join('\n'), {
-      fontSize: '22px', color: '#fff', align: 'center',
-      lineSpacing: 8,
+      fontSize: '22px', color: '#fff', align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-
     this.input.keyboard.once('keydown-R', () => this.scene.restart());
   }
 
@@ -640,42 +781,48 @@ export default class WorldScene extends Phaser.Scene {
     this.engineSound.stop();
     this.sfx.gameover.play();
     this.player.setVelocity(0, 0);
-
-    const cx = this.scale.width / 2;
-    const cy = this.scale.height / 2;
+    const cx = this.scale.width / 2, cy = this.scale.height / 2;
 
     this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.7)
       .setScrollFactor(0).setDepth(30);
-
     this.add.text(cx, cy - 60, '💀 超時！', {
       fontSize: '48px', color: '#ef4444', fontStyle: 'bold',
       stroke: '#000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-
     this.add.text(cx, cy + 20, [
       '老闆說你今天要請全公司喝手搖飲！',
-      `最終分數：${this.score}`,
-      '',
-      '按 R 重新開始',
+      `最終分數：${this.score}`, '', '按 R 重新開始',
     ].join('\n'), {
-      fontSize: '20px', color: '#fff', align: 'center',
-      lineSpacing: 8,
+      fontSize: '20px', color: '#fff', align: 'center', lineSpacing: 8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-
     this.input.keyboard.once('keydown-R', () => this.scene.restart());
+  }
+
+  // 玩家轉向（用 flipX/flipY 代替 angle 避免顛倒）
+  updatePlayerRotation() {
+    switch (this.playerDir) {
+      case 'right':
+        this.player.setAngle(0).setFlipX(false).setFlipY(false);
+        break;
+      case 'left':
+        this.player.setAngle(0).setFlipX(true).setFlipY(false);
+        break;
+      case 'down':
+        this.player.setAngle(90).setFlipX(false).setFlipY(false);
+        break;
+      case 'up':
+        this.player.setAngle(-90).setFlipX(false).setFlipY(false);
+        break;
+    }
   }
 
   update() {
     if (this.gameOver || this.gameWon) return;
 
-    // 移動
+    // 加速
     const boosting = (this.keys.SPACE.isDown || this.virtual.boost) && this.boostFuel > 0;
-    if (boosting && !this.isBoosting) {
-      this.isBoosting = true;
-      this.sfx.boost.play();
-    }
+    if (boosting && !this.isBoosting) { this.isBoosting = true; this.sfx.boost.play(); }
     if (!boosting) this.isBoosting = false;
-
     const speed = boosting ? this.baseSpeed * 1.8 : this.baseSpeed;
     if (boosting) {
       this.boostFuel = Math.max(0, this.boostFuel - 0.5);
@@ -685,27 +832,26 @@ export default class WorldScene extends Phaser.Scene {
       this.exhaust.emitting = false;
     }
 
+    // 移動
     let vx = 0, vy = 0;
     if (this.cursors.left.isDown || this.keys.A.isDown || this.virtual.left) vx -= speed;
     if (this.cursors.right.isDown || this.keys.D.isDown || this.virtual.right) vx += speed;
     if (this.cursors.up.isDown || this.keys.W.isDown || this.virtual.up) vy -= speed;
     if (this.cursors.down.isDown || this.keys.S.isDown || this.virtual.down) vy += speed;
-
-    // 對角線歸一化
-    if (vx !== 0 && vy !== 0) {
-      vx *= 0.707;
-      vy *= 0.707;
-    }
-
+    if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
     this.player.setVelocity(vx, vy);
 
-    // 轉向
-    if (vx < 0) this.player.setAngle(180);
-    else if (vx > 0) this.player.setAngle(0);
-    else if (vy < 0) this.player.setAngle(270);
-    else if (vy > 0) this.player.setAngle(90);
+    // 轉向（用 flip 代替 angle 180）
+    let newDir = this.playerDir;
+    if (vx < 0) newDir = 'left';
+    else if (vx > 0) newDir = 'right';
+    else if (vy < 0) newDir = 'up';
+    else if (vy > 0) newDir = 'down';
+    if (newDir !== this.playerDir) {
+      this.playerDir = newDir;
+      this.updatePlayerRotation();
+    }
 
-    // 動態縮放
     const moving = Math.abs(vx) + Math.abs(vy) > 0;
     const targetScale = boosting ? 3.4 : (moving ? 3.2 : 3);
     this.player.setScale(Phaser.Math.Linear(this.player.scaleX, targetScale, 0.1));
@@ -718,51 +864,42 @@ export default class WorldScene extends Phaser.Scene {
       this.virtual.interact = false;
     }
 
-    // 計時器
+    // HUD
     const left = Math.max(0, this.questState.deadlineMs - (this.time.now - this.questState.startAt));
     const sec = Math.ceil(left / 1000);
-
-    // 時間緊張時閃紅
     const urgent = sec <= 30;
-    const timerColor = urgent ? '#ef4444' : '#fff';
-
     this.hud.setText([
       `⏱ ${sec}s ${urgent ? '⚠ 快沒時間了！' : ''}`,
       `📋 任務：${this.questState.stage}/4`,
       `🔥 連擊：${this.combo}x`,
     ].join('\n'));
-    this.hud.setColor(timerColor);
-
+    this.hud.setColor(urgent ? '#ef4444' : '#fff');
     this.scoreText.setText(`💰 ${this.score}`);
 
     // 加速條
     this.boostBar.width = (this.boostFuel / 100) * 200;
     this.boostBar.fillColor = this.boostFuel > 30 ? 0x3b82f6 : 0xef4444;
 
-    // 小地圖更新
-    const px = this.mmX + (this.player.x / (MAP_W * TILE)) * this.mmW;
-    const py = this.mmY + (this.player.y / (MAP_H * TILE)) * this.mmH;
+    // 小地圖
+    const px = this.mmX + (this.player.x / (this.MAP_W * TILE)) * this.mmW;
+    const py = this.mmY + (this.player.y / (this.MAP_H * TILE)) * this.mmH;
     this.minimapDot.setPosition(px, py);
 
-    const targetNames = ['shop', 'customer', 'office', 'police'];
-
-    // 高亮當前任務目標
-    for (const [name, dot] of Object.entries(this.minimapPOIs)) {
-      const isTarget = targetNames[this.questState.stage] === name;
-      dot.setRadius(isTarget ? 4 : 2);
-      dot.setAlpha(isTarget ? 1 : 0.5);
+    for (const p of this.level.pois) {
+      const dot = this.minimapPOIs[p.key];
+      const isTarget = this.poiKeys[this.questState.stage] === p.key;
+      dot.setRadius(isTarget ? 4 : 2).setAlpha(isTarget ? 1 : 0.5);
     }
 
-    // 目標方向箭頭
-    const curTarget = this.poi[targetNames[this.questState.stage]];
+    // 方向箭頭
+    const targetKey = this.poiKeys[this.questState.stage];
+    const curTarget = this.poi[targetKey];
     if (curTarget && this.questState.stage < 4) {
-      const tx = curTarget.sprite.x;
-      const ty = curTarget.sprite.y;
+      const tx = curTarget.sprite.x, ty = curTarget.sprite.y;
       const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, tx, ty);
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, tx, ty);
       const margin = 60;
-      const hw = this.scale.width / 2 - margin;
-      const hh = this.scale.height / 2 - margin;
+      const hw = this.scale.width / 2 - margin, hh = this.scale.height / 2 - margin;
       const ax = this.scale.width / 2 + Math.cos(angle) * Math.min(hw, dist * 0.3);
       const ay = this.scale.height / 2 + Math.sin(angle) * Math.min(hh, dist * 0.3);
       this.arrow.setPosition(ax, ay).setAngle(Phaser.Math.RadToDeg(angle)).setVisible(dist > 120);
@@ -772,29 +909,24 @@ export default class WorldScene extends Phaser.Scene {
       this.arrowDist.setVisible(false);
     }
 
-    // 清除離開地圖的 NPC
+    // 清除越界 NPC
     this.npcCars.getChildren().forEach(car => {
-      if (car.active && (car.x < -200 || car.x > MAP_W * TILE + 200 ||
-          car.y < -200 || car.y > MAP_H * TILE + 200)) {
+      if (car.active && (car.x < -300 || car.x > this.MAP_W * TILE + 300 ||
+          car.y < -300 || car.y > this.MAP_H * TILE + 300)) {
         car.destroy();
       }
     });
 
-    // NPC 偶爾按喇叭
+    // 喇叭
     this.npcHonkTimer += this.game.loop.delta;
     if (this.npcHonkTimer > 5000) {
       this.npcHonkTimer = 0;
       const nearCars = this.npcCars.getChildren().filter(c =>
         c.active && Phaser.Math.Distance.Between(c.x, c.y, this.player.x, this.player.y) < 200
       );
-      if (nearCars.length > 0) {
-        this.sfx.honk.play();
-      }
+      if (nearCars.length > 0) this.sfx.honk.play();
     }
 
-    // 超時
-    if (left <= 0 && this.questState.stage < 4) {
-      this.showGameOver();
-    }
+    if (left <= 0 && this.questState.stage < 4) this.showGameOver();
   }
 }

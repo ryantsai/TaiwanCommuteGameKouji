@@ -186,6 +186,69 @@ export default class BootScene extends Phaser.Scene {
     g.fillRect(0, 0, 32, 32); g.fillRect(32, 32, 32, 32);
     g.generateTexture('sidewalk', 64, 64); g.clear();
 
+    // ===== POI 建築物紋理 =====
+    // 城隍廟（紅色廟宇風格）
+    g.fillStyle(0x8b1a1a, 1); g.fillRect(0, 0, 48, 48);
+    g.fillStyle(0xdc2626, 1); g.fillRect(4, 0, 40, 8); // 紅色屋頂
+    g.fillStyle(0xfbbf24, 1); g.fillRect(4, 2, 40, 3); // 金色屋簷
+    g.fillStyle(0xb91c1c, 1); g.fillRect(6, 10, 36, 34);
+    g.fillStyle(0xfef08a, 0.9);
+    g.fillRect(12, 14, 8, 10); g.fillRect(28, 14, 8, 10); // 窗
+    g.fillStyle(0x7c2d12, 1); g.fillRect(20, 28, 8, 20); // 大門
+    g.generateTexture('poiTemple', 48, 48); g.clear();
+
+    // 新竹車站（灰白色歐風車站）
+    g.fillStyle(0x64748b, 1); g.fillRect(0, 0, 48, 48);
+    g.fillStyle(0xe2e8f0, 1); g.fillRect(4, 6, 40, 38);
+    g.fillStyle(0x475569, 1); g.fillRect(4, 0, 40, 8); // 屋頂
+    g.fillStyle(0x334155, 1); g.fillRect(16, 2, 16, 4); // 鐘塔
+    g.fillStyle(0x93c5fd, 0.8);
+    g.fillRect(8, 12, 6, 8); g.fillRect(18, 12, 6, 8); g.fillRect(28, 12, 6, 8); g.fillRect(38, 12, 6, 8);
+    g.fillStyle(0x475569, 1); g.fillRect(18, 30, 12, 18); // 大門
+    g.generateTexture('poiStation', 48, 48); g.clear();
+
+    // 巨城 Big City（現代商場）
+    g.fillStyle(0x1e40af, 1); g.fillRect(0, 0, 48, 48);
+    g.fillStyle(0x3b82f6, 1); g.fillRect(2, 2, 44, 44);
+    g.fillStyle(0x93c5fd, 0.6);
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        g.fillRect(4 + col * 11, 4 + row * 11, 8, 8); // 玻璃帷幕
+      }
+    }
+    g.fillStyle(0x22c55e, 1); g.fillRect(16, 38, 16, 10); // 入口
+    g.generateTexture('poiMall', 48, 48); g.clear();
+
+    // 清華大學（校門風格）
+    g.fillStyle(0x4a6741, 1); g.fillRect(0, 0, 48, 48);
+    g.fillStyle(0x6b8f60, 1); g.fillRect(2, 2, 44, 44);
+    g.fillStyle(0x8b5cf6, 1); g.fillRect(10, 8, 28, 20); // 主樓
+    g.fillStyle(0xfef08a, 0.8);
+    g.fillRect(14, 12, 6, 6); g.fillRect(28, 12, 6, 6);
+    g.fillStyle(0xffffff, 1); g.fillRect(16, 34, 16, 2); // 校門欄杆
+    g.fillRect(10, 32, 4, 6); g.fillRect(34, 32, 4, 6); // 門柱
+    g.generateTexture('poiUniversity', 48, 48); g.clear();
+
+    // 科學園區公司（現代辦公大樓）
+    g.fillStyle(0x334155, 1); g.fillRect(0, 0, 48, 48);
+    g.fillStyle(0x475569, 1); g.fillRect(3, 3, 42, 42);
+    // 玻璃窗格
+    g.fillStyle(0x93c5fd, 0.7);
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        g.fillRect(5 + col * 8, 5 + row * 8, 6, 5);
+      }
+    }
+    // 公司招牌
+    g.fillStyle(0x22c55e, 1); g.fillRect(10, 42, 28, 6);
+    g.generateTexture('poiOffice', 48, 48); g.clear();
+
+    // 樹木（裝飾用）
+    g.fillStyle(0x5b3a1a, 1); g.fillRect(6, 10, 4, 6); // 樹幹
+    g.fillStyle(0x2d6a1e, 1); g.fillCircle(8, 6, 7);
+    g.fillStyle(0x3d8a2e, 0.7); g.fillCircle(6, 4, 4);
+    g.generateTexture('tree', 16, 16); g.clear();
+
     // 爆炸動畫
     this.anims.create({
       key: 'explode',
