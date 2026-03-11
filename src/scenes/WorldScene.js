@@ -47,9 +47,6 @@ export default class WorldScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(20, 30).setOffset(6, 14);
 
-    this.engineSound = this.sound.add('bgm', { loop: true, volume: 0.18 });
-    this.engineSound.play();
-
     this.physics.world.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -78,7 +75,6 @@ export default class WorldScene extends Phaser.Scene {
       .setDepth(10);
 
     this.rain = this.add.particles(0, 0, 'grass', {
-      frame: 0,
       x: { min: 0, max: MAP_W * TILE },
       y: 0,
       lifespan: 1000,
@@ -106,8 +102,7 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   handleInteract(target) {
-    this.sound.play('sfxInteract', { volume: 0.25 });
-    const stage = this.questState.stage;
+        const stage = this.questState.stage;
 
     if (target === this.poi.shop && stage === 0) {
       this.questState.gotBreakfast = true;
