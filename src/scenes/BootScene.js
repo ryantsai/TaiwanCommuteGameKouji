@@ -121,30 +121,26 @@ export default class BootScene extends Phaser.Scene {
     }
     g.generateTexture('grass', 64, 64); g.clear();
 
-    // 道路 - 更真實的柏油路紋理
+    // 道路 - 乾淨柏油路面 + 內部車道線
     // 垂直道路
-    g.fillStyle(0x3a3a42, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x42424a, 0.4); // 路面微妙變化
-    g.fillRect(0, 0, 30, 64); g.fillRect(34, 0, 30, 64);
-    g.lineStyle(1, 0x52525b, 0.5); g.lineBetween(0, 0, 0, 64); g.lineBetween(63, 0, 63, 64); // 路緣
-    g.lineStyle(2, 0xfef08a, 0.7); g.lineBetween(32, 0, 32, 20); g.lineBetween(32, 28, 32, 44); g.lineBetween(32, 52, 32, 64); // 黃色虛線
+    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
+    // 微妙路面紋理
+    g.fillStyle(0x4a4a53, 0.3); g.fillRect(2, 0, 28, 64); g.fillRect(34, 0, 28, 64);
+    // 中央黃色虛線
+    g.lineStyle(2, 0xfef08a, 0.6);
+    g.lineBetween(32, 2, 32, 18); g.lineBetween(32, 26, 32, 42); g.lineBetween(32, 50, 32, 62);
     g.generateTexture('road-v', 64, 64); g.clear();
 
     // 水平道路
-    g.fillStyle(0x3a3a42, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x42424a, 0.4);
-    g.fillRect(0, 0, 64, 30); g.fillRect(0, 34, 64, 30);
-    g.lineStyle(1, 0x52525b, 0.5); g.lineBetween(0, 0, 64, 0); g.lineBetween(0, 63, 64, 63);
-    g.lineStyle(2, 0xfef08a, 0.7); g.lineBetween(0, 32, 20, 32); g.lineBetween(28, 32, 44, 32); g.lineBetween(52, 32, 64, 32);
+    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
+    g.fillStyle(0x4a4a53, 0.3); g.fillRect(0, 2, 64, 28); g.fillRect(0, 34, 64, 28);
+    g.lineStyle(2, 0xfef08a, 0.6);
+    g.lineBetween(2, 32, 18, 32); g.lineBetween(26, 32, 42, 32); g.lineBetween(50, 32, 62, 32);
     g.generateTexture('road-h', 64, 64); g.clear();
 
     // 十字路口
-    g.fillStyle(0x3a3a42, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x42424a, 0.3); g.fillRect(4, 4, 56, 56);
-    // 斑馬線
-    g.fillStyle(0xe2e8f0, 0.5);
-    for (let i = 0; i < 5; i++) { g.fillRect(6 + i * 11, 2, 6, 4); g.fillRect(6 + i * 11, 58, 6, 4); }
-    for (let i = 0; i < 5; i++) { g.fillRect(2, 6 + i * 11, 4, 6); g.fillRect(58, 6 + i * 11, 4, 6); }
+    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
+    g.fillStyle(0x4a4a53, 0.2); g.fillRect(4, 4, 56, 56);
     g.generateTexture('road-x', 64, 64); g.clear();
 
     // 護城河水面紋理

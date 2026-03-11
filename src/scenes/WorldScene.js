@@ -101,7 +101,7 @@ const LEVELS = [
       { text: '西大路', x: 24, y: 37 },
       { text: '護城河', x: 30, y: 15 },
     ],
-    playerStart: { x: 15, y: 16 },  // 從中正路/民富街出發（市中心）
+    playerStart: { x: 14, y: 17 },  // 從中正路/民富街交叉口出發
     deadlineMs: 200000,
     rainAfterStage: 2,
   },
@@ -297,16 +297,25 @@ export default class WorldScene extends Phaser.Scene {
     return this.roadSet.has(`${x},${y}`);
   }
 
-  // 玩家能否進入某格：道路、POI 周圍、或人行道（POI旁）
+  // 玩家能否進入某位置（像素座標）
   canPlayerEnter(px, py) {
+    // 檢查玩家中心所在格子
     const gx = Math.floor(px / TILE);
     const gy = Math.floor(py / TILE);
     if (this.isRoad(gx, gy)) return true;
-    // POI 附近 3 格內可以進入（要去任務點）
+    // 也檢查周圍半格（玩家可能跨格）
+    const margin = TILE * 0.4;
+    if (this.isRoad(Math.floor((px - margin) / TILE), gy)) return true;
+    if (this.isRoad(Math.floor((px + margin) / TILE), gy)) return true;
+    if (this.isRoad(gx, Math.floor((py - margin) / TILE))) return true;
+    if (this.isRoad(gx, Math.floor((py + margin) / TILE))) return true;
+    // POI 附近 3 格內可以進入（去任務點）
     for (const p of this.level.pois) {
-      const dx = Math.abs(gx - p.gridX);
-      const dy = Math.abs(gy - p.gridY);
-      if (dx <= 2 && dy <= 2) return true;
+      if (Math.abs(gx - p.gridX) <= 2 && Math.abs(gy - p.gridY) <= 2) return true;
+    }
+    // 圓環附近
+    for (const lm of (this.level.landmarks || [])) {
+      if (Math.abs(gx - lm.x) <= 3 && Math.abs(gy - lm.y) <= 3) return true;
     }
     return false;
   }
@@ -968,10 +977,19 @@ export default class WorldScene extends Phaser.Scene {
       this.arrowDist.setVisible(false);
     }
 
-    // 清除越界 NPC
+    // 清除越界或離開道路的 NPC
     this.npcCars.getChildren().forEach(car => {
-      if (car.active && (car.x < -300 || car.x > this.MAP_W * TILE + 300 ||
-          car.y < -300 || car.y > this.MAP_H * TILE + 300)) {
+      if (!car.active) return;
+      // 越界
+      if (car.x < -300 || car.x > this.MAP_W * TILE + 300 ||
+          car.y < -300 || car.y > this.MAP_H * TILE + 300) {
+        car.destroy();
+        return;
+      }
+      // 離開道路就銷毀（被碰撞推出道路時）
+      const gx = Math.floor(car.x / TILE);
+      const gy = Math.floor(car.y / TILE);
+      if (car.x > 0 && car.y > 0 && !this.isRoad(gx, gy)) {
         car.destroy();
       }
     });
