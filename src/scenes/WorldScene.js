@@ -55,6 +55,25 @@ export default class WorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,S,A,D,E');
 
+    this.virtual = { up:false, down:false, left:false, right:false, interact:false };
+    const btnStyle = { fontSize: '28px', color: '#fff', backgroundColor: 'rgba(0,0,0,0.35)', padding: {x:14,y:10} };
+    const mkBtn = (x,y,label,keyName) => {
+      const b = this.add.text(x,y,label,btnStyle).setScrollFactor(0).setDepth(20).setInteractive({ useHandCursor: true });
+      b.on('pointerdown', ()=> this.virtual[keyName]=true);
+      b.on('pointerup', ()=> this.virtual[keyName]=false);
+      b.on('pointerout', ()=> this.virtual[keyName]=false);
+      b.on('pointerupoutside', ()=> this.virtual[keyName]=false);
+      return b;
+    };
+    // 左下十字
+    mkBtn(24, this.scale.height-130, '◀', 'left');
+    mkBtn(88, this.scale.height-194, '▲', 'up');
+    mkBtn(88, this.scale.height-66, '▼', 'down');
+    mkBtn(152, this.scale.height-130, '▶', 'right');
+    // 右下互動
+    const btnE = mkBtn(this.scale.width-90, this.scale.height-120, 'E', 'interact');
+    btnE.setStyle({fontSize:'30px', backgroundColor:'rgba(34,197,94,0.45)'});
+
     this.engineSound = this.sound.add('bgmLoop', { loop: true, volume: 0.2 });
     this.engineSound.play();
 
@@ -137,10 +156,10 @@ export default class WorldScene extends Phaser.Scene {
     const speed = 190;
     let vx = 0,
       vy = 0;
-    if (this.cursors.left.isDown || this.keys.A.isDown) vx -= speed;
-    if (this.cursors.right.isDown || this.keys.D.isDown) vx += speed;
-    if (this.cursors.up.isDown || this.keys.W.isDown) vy -= speed;
-    if (this.cursors.down.isDown || this.keys.S.isDown) vy += speed;
+    if (this.cursors.left.isDown || this.keys.A.isDown || this.virtual.left) vx -= speed;
+    if (this.cursors.right.isDown || this.keys.D.isDown || this.virtual.right) vx += speed;
+    if (this.cursors.up.isDown || this.keys.W.isDown || this.virtual.up) vy -= speed;
+    if (this.cursors.down.isDown || this.keys.S.isDown || this.virtual.down) vy += speed;
 
     this.player.setVelocity(vx, vy);
 
@@ -152,11 +171,12 @@ export default class WorldScene extends Phaser.Scene {
     const moving = Math.abs(vx) + Math.abs(vy) > 0;
     this.player.setScale(moving ? 1.33 : 1.3);
 
-    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) {
+    if (Phaser.Input.Keyboard.JustDown(this.keys.E) || this.virtual.interact) {
       const near = this.physics
         .overlapCirc(this.player.x, this.player.y, 70, true, true)
         .find((b) => this.interactives.contains(b.gameObject));
       if (near) this.handleInteract(near.gameObject);
+      this.virtual.interact = false;
     }
 
     // HUD + timer challenge
