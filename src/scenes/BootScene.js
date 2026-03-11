@@ -3,7 +3,15 @@ import Phaser from 'phaser';
 export default class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
-  preload() {}
+  preload() {
+    this.load.image('bikeReal', 'src/assets/images/player_bike.png');
+    this.load.image('poiShopReal', 'src/assets/images/poi_shop.png');
+    this.load.image('poiOfficeReal', 'src/assets/images/poi_office.png');
+    this.load.image('poiPoliceReal', 'src/assets/images/poi_police.png');
+    this.load.image('poiCustomerReal', 'src/assets/images/poi_customer.png');
+    this.load.audio('bgmLoop', 'src/assets/audio/bgm_time_driving.ogg');
+    this.load.audio('sfxInteract', 'src/assets/audio/sfx_interact.ogg');
+  }
 
   create() {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -25,6 +33,7 @@ export default class BootScene extends Phaser.Scene {
     // rain pixel
     g.fillStyle(0x93c5fd, 1); g.fillRect(0, 0, 2, 8); g.generateTexture('rain', 2, 8); g.clear();
 
+    this.textures.renameTexture('bike','bikeFallback');
     this.scene.start('WorldScene');
   }
 }

@@ -35,14 +35,14 @@ export default class WorldScene extends Phaser.Scene {
 
     // POIs
     this.poi = {
-      shop: this.add.image(18 * TILE + TILE / 2, 6 * TILE + TILE / 2, 'poi-shop'),
-      office: this.add.image(28 * TILE + TILE / 2, 22 * TILE + TILE / 2, 'poi-office'),
-      customer: this.add.image(8 * TILE + TILE / 2, 22 * TILE + TILE / 2, 'poi-shop').setTint(0x60a5fa),
-      police: this.add.image(18 * TILE + TILE / 2, 14 * TILE + TILE / 2, 'poi-office').setTint(0xf43f5e),
+      shop: this.add.image(18 * TILE + TILE / 2, 6 * TILE + TILE / 2, 'poiShopReal').setScale(0.6),
+      office: this.add.image(28 * TILE + TILE / 2, 22 * TILE + TILE / 2, 'poiOfficeReal').setScale(0.6),
+      customer: this.add.image(8 * TILE + TILE / 2, 22 * TILE + TILE / 2, 'poiCustomerReal').setScale(0.6),
+      police: this.add.image(18 * TILE + TILE / 2, 14 * TILE + TILE / 2, 'poiPoliceReal').setScale(0.6),
     };
     Object.values(this.poi).forEach((p) => this.interactives.add(p));
 
-    this.player = this.physics.add.sprite(8 * TILE + 10, 6 * TILE + 10, 'bike').setScale(1.3);
+    this.player = this.physics.add.sprite(8 * TILE + 10, 6 * TILE + 10, 'bikeReal').setScale(0.55);
     this.player.setAngle(90);
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(20, 30).setOffset(6, 14);
@@ -54,6 +54,9 @@ export default class WorldScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,S,A,D,E');
+
+    this.engineSound = this.sound.add('bgmLoop', { loop: true, volume: 0.2 });
+    this.engineSound.play();
 
     this.questState = {
       stage: 0,

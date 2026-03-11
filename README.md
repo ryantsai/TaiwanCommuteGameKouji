@@ -24,24 +24,29 @@ npm run preview
 - 互動：`E`
 - 目標：在限時內完成通勤任務鏈
   1. 去便利店買早餐
-  2. 送文件到客戶端（藍色標記）
+  2. 送文件到客戶端（藍色車）
   3. 去公司打卡
   4. 到警察點解除罰單
 
-## 已完成重點
+## 目前內容
 
-- Canvas 單檔版重構為 **Phaser 3 + Vite**
-- 模組化場景結構（`src/scenes`）
+- Phaser 3 模組化場景
 - 可移動探索地圖、碰撞、鏡頭跟隨
-- 任務流程與事件系統（含限時挑戰）
-- 基礎音效與雨天事件演出
-- GitHub Pages 相容（`vite.config.js` 設定 `base: './'`）
+- 4 段任務故事 + 限時挑戰
+- 雨天事件演出
+- GitHub Pages（docs 輸出）
 
 ## 素材來源與授權
 
-目前開發階段使用的外部素材（原型）來自：
+本專案目前使用 **Kenney Asset Pack** 素材（你本機 `/home/ryan/Kenney`）與其音效，
+使用檔案位於：
 
-- Phaser Labs 公開示例素材（圖像/音訊）
-  - `https://labs.phaser.io/assets/...`
+- `src/assets/images/player_bike.png`
+- `src/assets/images/poi_shop.png`
+- `src/assets/images/poi_office.png`
+- `src/assets/images/poi_police.png`
+- `src/assets/images/poi_customer.png`
+- `src/assets/audio/bgm_time_driving.ogg`
+- `src/assets/audio/sfx_interact.ogg`
 
-> 後續正式商用前，建議替換為明確可商用授權素材（如 Kenney / itch.io 授權包 / OpenGameArt CC0），並在此處補齊作者與授權條款。
+授權：Kenney 官方素材（多數為 CC0 / 可自由使用，仍建議保留出處）。
