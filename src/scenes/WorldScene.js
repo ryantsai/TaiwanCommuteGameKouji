@@ -224,7 +224,7 @@ export default class WorldScene extends Phaser.Scene {
     // 定時事件
     this.time.addEvent({ delay: 8000, callback: this.spawnCoins, callbackScope: this, loop: true });
     this.time.addEvent({ delay: 15000, callback: this.spawnPowerups, callbackScope: this, loop: true });
-    this.time.addEvent({ delay: 3000, callback: this.spawnNPCCars, callbackScope: this, loop: true });
+    this.time.addEvent({ delay: 800, callback: this.spawnNPCCars, callbackScope: this, loop: true });
     this.time.addEvent({ delay: 20000, callback: this.randomEvent, callbackScope: this, loop: true });
 
     this.setStage(0);
@@ -389,10 +389,10 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   placeTrafficLights() {
-    // 只在主幹道交叉口放紅綠燈（前5條水平 x 前5條垂直 = 主要路口）
+    // 在主幹道交叉口放紅綠燈（帶狀態系統）
+    this.trafficLights = []; // { x, y, hGreen: boolean, sprite, timer }
     const mainHRows = [];
     const mainVCols = [];
-    // 只取前5條主幹道的第一個 y / x
     for (let i = 0; i < Math.min(5, this.level.hRoads.length); i++) {
       mainHRows.push(this.level.hRoads[i].y[0]);
     }
@@ -404,16 +404,41 @@ export default class WorldScene extends Phaser.Scene {
       for (const row of mainHRows) {
         if (!this.isRoad(col, row)) continue;
         const key = `${Math.floor(col / 5)},${Math.floor(row / 5)}`;
-        if (placed.has(key)) continue; // 避免太密集
+        if (placed.has(key)) continue;
         placed.add(key);
-        // 放在路口角落
         const tx = col - 1, ty = row - 1;
         if (tx >= 0 && ty >= 0 && !this.isRoad(tx, ty)) {
-          this.add.image(tx * TILE + TILE / 2, ty * TILE + TILE / 2, 'trafficLight')
+          const img = this.add.image(tx * TILE + TILE / 2, ty * TILE + TILE / 2, 'trafficLight')
             .setScale(1.8).setAlpha(0.85).setDepth(3);
+          // 路口中心像素座標（用來偵測 NPC 接近）
+          const centerX = col * TILE + TILE / 2;
+          const centerY = row * TILE + TILE / 2;
+          this.trafficLights.push({
+            centerX, centerY, hGreen: true, sprite: img,
+          });
         }
       }
     }
+
+    // 紅綠燈狀態指示圓點（紅/綠）
+    for (const tl of this.trafficLights) {
+      tl.hDot = this.add.circle(tl.centerX - TILE, tl.centerY, 6, 0x22c55e).setDepth(5).setAlpha(0.9);
+      tl.vDot = this.add.circle(tl.centerX, tl.centerY - TILE, 6, 0xef4444).setDepth(5).setAlpha(0.9);
+    }
+
+    // 每 8 秒切換紅綠燈
+    this.time.addEvent({
+      delay: 8000,
+      callback: () => {
+        for (const tl of this.trafficLights) {
+          tl.hGreen = !tl.hGreen;
+          tl.hDot.fillColor = tl.hGreen ? 0x22c55e : 0xef4444;
+          tl.vDot.fillColor = tl.hGreen ? 0xef4444 : 0x22c55e;
+        }
+      },
+      callbackScope: this,
+      loop: true,
+    });
   }
 
   placeRoadLabels() {
@@ -530,8 +555,8 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   spawnNPCCars() {
-    if (this.npcCars.countActive() > 35) return;  // 台灣塞車感
-    const toSpawn = Math.min(8, 40 - this.npcCars.countActive());
+    if (this.npcCars.countActive() > 350) return;  // 台灣塞車感（超大量車流）
+    const toSpawn = Math.min(40, 400 - this.npcCars.countActive());
     for (let i = 0; i < toSpawn; i++) this.spawnOneNPC();
   }
 
@@ -582,9 +607,13 @@ export default class WorldScene extends Phaser.Scene {
     car.body.setAllowGravity(false);
     car.setVelocity(vx, vy);
     car.body.setSize(car.width * 0.7, car.height * 0.7);
-    // NPC 車輛質量大，不容易被推動
     car.body.setImmovable(true);
     car.body.pushable = false;
+    // 儲存原始速度（紅燈停車後恢復用）
+    car.setData('origVx', vx);
+    car.setData('origVy', vy);
+    car.setData('horizontal', horizontal);
+    car.setData('stopped', false);
 
     this.time.delayedCall(30000, () => { if (car.active) car.destroy(); });
   }
@@ -976,6 +1005,48 @@ export default class WorldScene extends Phaser.Scene {
       this.arrow.setVisible(false);
       this.arrowDist.setVisible(false);
     }
+
+    // 紅綠燈停車邏輯
+    const stopDist = TILE * 2.5; // 距離路口 2.5 格內開始停車
+    this.npcCars.getChildren().forEach(car => {
+      if (!car.active) return;
+      const isH = car.getData('horizontal');
+      let shouldStop = false;
+
+      for (const tl of this.trafficLights) {
+        const dx = Math.abs(car.x - tl.centerX);
+        const dy = Math.abs(car.y - tl.centerY);
+
+        if (isH) {
+          // 水平車輛：紅燈時在路口前停下
+          if (!tl.hGreen && dy < TILE * 1.5 && dx < stopDist && dx > TILE * 0.3) {
+            // 確認車是朝路口方向行駛
+            const origVx = car.getData('origVx');
+            if ((origVx > 0 && car.x < tl.centerX) || (origVx < 0 && car.x > tl.centerX)) {
+              shouldStop = true;
+              break;
+            }
+          }
+        } else {
+          // 垂直車輛：紅燈時在路口前停下
+          if (tl.hGreen && dx < TILE * 1.5 && dy < stopDist && dy > TILE * 0.3) {
+            const origVy = car.getData('origVy');
+            if ((origVy > 0 && car.y < tl.centerY) || (origVy < 0 && car.y > tl.centerY)) {
+              shouldStop = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (shouldStop && !car.getData('stopped')) {
+        car.setVelocity(0, 0);
+        car.setData('stopped', true);
+      } else if (!shouldStop && car.getData('stopped')) {
+        car.setVelocity(car.getData('origVx'), car.getData('origVy'));
+        car.setData('stopped', false);
+      }
+    });
 
     // 清除越界或離開道路的 NPC
     this.npcCars.getChildren().forEach(car => {
