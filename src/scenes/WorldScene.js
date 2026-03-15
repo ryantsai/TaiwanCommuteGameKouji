@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GRASS, GROUND, SIDEWALK, ROAD, WATER, BUILDINGS, TREES, LAMP } from '../TileData.js';
+import { GRASS, GROUND, SIDEWALK, ROAD, WATER, BUILDINGS, BUILDINGS_SMALL, BUILDINGS_MEDIUM, BUILDINGS_LARGE, TREES, LAMP } from '../TileData.js';
 
 const TILE = 64;
 const SUBTILE = 8; // 每個圖磚 8px
@@ -689,58 +689,109 @@ export default class WorldScene extends Phaser.Scene {
       }
     }
 
-    // 4) 填充建築物
+    // 4) 填充建築物 — 所有非道路、非人行道的格子都放建築
+    // 先標記護城河位置（避免在水上蓋樓）
+    const moatPositionsForBuild = new Set((this.level.moat || []).map(m => `${m.x},${m.y}`));
+    // 標記 POI 位置（避免建築擋住 POI）
+    const poiPositions = new Set((this.level.pois || []).map(p => `${p.gridX},${p.gridY}`));
+    // 標記地標位置
+    const landmarkPositions = new Set((this.level.landmarks || []).map(l => `${l.x},${l.y}`));
+
     for (let gy = 0; gy < this.MAP_H; gy++) {
       for (let gx = 0; gx < this.MAP_W; gx++) {
         if (this.isRoad(gx, gy)) continue;
+        if (moatPositionsForBuild.has(`${gx},${gy}`)) continue;
+        if (poiPositions.has(`${gx},${gy}`)) continue;
+        if (landmarkPositions.has(`${gx},${gy}`)) continue;
+
         const nearRoad = this.isRoad(gx - 1, gy) || this.isRoad(gx + 1, gy) ||
                          this.isRoad(gx, gy - 1) || this.isRoad(gx, gy + 1);
-        if (nearRoad) continue;
-        if (gx <= 0 || gx >= this.MAP_W - 1 || gy <= 0 || gy >= this.MAP_H - 1) continue;
-        const hash = (gx * 31 + gy * 17) % 7;
-        if (hash !== 0 && hash !== 3) continue;
 
         const bx = gx * CELLS;
         const by = gy * CELLS;
-        const bIdx = (gx * 7 + gy * 13) % BUILDINGS.length;
-        const tmpl = BUILDINGS[bIdx];
-        // 居中放置建築
-        const offX = Math.floor((CELLS - tmpl.w) / 2);
-        const offY = Math.floor((CELLS - tmpl.h) / 2);
-        for (let r = 0; r < tmpl.h; r++) {
-          for (let c = 0; c < tmpl.w; c++) {
-            buildingLayer.putTileAt(tmpl.tiles[r][c], bx + offX + c, by + offY + r);
+
+        // 確定性 hash 選擇建築
+        const hash = (gx * 31 + gy * 17 + gx * gy * 3) & 0xFFFF;
+
+        if (nearRoad) {
+          // 路旁：用小型建築（商店、小房子），偶爾留空當人行道
+          const skip = hash % 5 === 0; // 20% 留空（純人行道）
+          if (!skip) {
+            const tmpl = BUILDINGS_SMALL[hash % BUILDINGS_SMALL.length];
+            const offX = Math.floor((CELLS - tmpl.w) / 2);
+            const offY = Math.floor((CELLS - tmpl.h) / 2);
+            for (let r = 0; r < tmpl.h; r++) {
+              for (let c = 0; c < tmpl.w; c++) {
+                buildingLayer.putTileAt(tmpl.tiles[r][c], bx + offX + c, by + offY + r);
+              }
+            }
+          }
+        } else {
+          // 內部區域：用中型或大型建築，幾乎全填滿
+          const skip = hash % 10 === 0; // 10% 留空（綠地/公園）
+          if (!skip) {
+            // 離道路越遠，建築越大
+            const distToRoad = this._minDistToRoad(gx, gy);
+            let pool;
+            if (distToRoad >= 3 && hash % 3 === 0) {
+              pool = BUILDINGS_LARGE;
+            } else if (distToRoad >= 2) {
+              pool = BUILDINGS_MEDIUM;
+            } else {
+              pool = BUILDINGS_SMALL;
+            }
+            const tmpl = pool[hash % pool.length];
+            const offX = Math.floor((CELLS - tmpl.w) / 2);
+            const offY = Math.max(0, Math.floor((CELLS - tmpl.h) / 2));
+            for (let r = 0; r < tmpl.h && (by + offY + r) < this.MAP_H * CELLS; r++) {
+              for (let c = 0; c < tmpl.w && (bx + offX + c) < this.MAP_W * CELLS; c++) {
+                buildingLayer.putTileAt(tmpl.tiles[r][c], bx + offX + c, by + offY + r);
+              }
+            }
           }
         }
-        // 碰撞用方塊（仍然 64px 基準）
-        const cx = gx * TILE + TILE / 2;
-        const cy = gy * TILE + TILE / 2;
-        const block = this.add.rectangle(cx, cy, TILE, TILE, 0x000000, 0);
-        this.blockers.add(block);
+
+        // 碰撞方塊（所有非道路、非空地都是障礙）
+        if (!(nearRoad && hash % 5 === 0) && !(hash % 10 === 0)) {
+          const cx = gx * TILE + TILE / 2;
+          const cy = gy * TILE + TILE / 2;
+          const block = this.add.rectangle(cx, cy, TILE, TILE, 0x000000, 0);
+          this.blockers.add(block);
+        }
       }
     }
 
-    // 5) 裝飾（樹木、路燈）
+    // 5) 裝飾（樹木、路燈）— 只在空格放（人行道留空格和公園綠地）
     for (let gy = 0; gy < this.MAP_H; gy++) {
       for (let gx = 0; gx < this.MAP_W; gx++) {
         if (this.isRoad(gx, gy)) continue;
+        if (moatPositionsForBuild.has(`${gx},${gy}`)) continue;
         const nearRoad = this.isRoad(gx - 1, gy) || this.isRoad(gx + 1, gy) ||
                          this.isRoad(gx, gy - 1) || this.isRoad(gx, gy + 1);
         const bx = gx * CELLS;
         const by = gy * CELLS;
-        const treeHash = (gx * 13 + gy * 7) % 9;
+        const hash = (gx * 31 + gy * 17 + gx * gy * 3) & 0xFFFF;
+        const isEmptySidewalk = nearRoad && (hash % 5 === 0);
+        const isPark = !nearRoad && (hash % 10 === 0);
+        const treeHash = (gx * 13 + gy * 7) % 6;
 
-        if (nearRoad && treeHash === 0) {
-          // 棕櫚樹（2 tile 高）
-          objectLayer.putTileAt(TREES.PALM_TOP, bx + 3, by + 2);
-          objectLayer.putTileAt(TREES.PALM_BOT, bx + 3, by + 3);
-        } else if (nearRoad && treeHash === 3) {
-          // 路燈
-          objectLayer.putTileAt(LAMP.TOP, bx + 4, by + 3);
-          objectLayer.putTileAt(LAMP.BOT, bx + 4, by + 4);
-        } else if (!nearRoad && treeHash === 1) {
-          // 圓形樹（空地）
-          objectLayer.putTileAt(TREES.ROUND, bx + 4, by + 4);
+        if (isEmptySidewalk) {
+          // 空人行道上放路燈或樹
+          if (treeHash === 0) {
+            objectLayer.putTileAt(TREES.PALM_TOP, bx + 3, by + 2);
+            objectLayer.putTileAt(TREES.PALM_BOT, bx + 3, by + 3);
+          } else if (treeHash === 1) {
+            objectLayer.putTileAt(LAMP.TOP, bx + 4, by + 3);
+            objectLayer.putTileAt(LAMP.BOT, bx + 4, by + 4);
+          } else if (treeHash === 2) {
+            objectLayer.putTileAt(TREES.ROUND, bx + 2, by + 3);
+          }
+        } else if (isPark) {
+          // 公園綠地：多棵樹
+          objectLayer.putTileAt(TREES.PALM_TOP, bx + 2, by + 1);
+          objectLayer.putTileAt(TREES.PALM_BOT, bx + 2, by + 2);
+          objectLayer.putTileAt(TREES.ROUND, bx + 5, by + 4);
+          objectLayer.putTileAt(TREES.ROUND, bx + 3, by + 5);
         }
       }
     }
@@ -815,6 +866,19 @@ export default class WorldScene extends Phaser.Scene {
     if (!hasU && !hasR) layer.putTileAt(ROAD.CROSS_TR, bx + CELLS - 1, by);
     if (!hasD && !hasL) layer.putTileAt(ROAD.CROSS_BL, bx, by + CELLS - 1);
     if (!hasD && !hasR) layer.putTileAt(ROAD.CROSS_BR, bx + CELLS - 1, by + CELLS - 1);
+  }
+
+  _minDistToRoad(gx, gy) {
+    for (let d = 1; d <= 5; d++) {
+      for (let dx = -d; dx <= d; dx++) {
+        for (let dy = -d; dy <= d; dy++) {
+          if (Math.abs(dx) === d || Math.abs(dy) === d) {
+            if (this.isRoad(gx + dx, gy + dy)) return d;
+          }
+        }
+      }
+    }
+    return 6;
   }
 
   _fillSidewalk(layer, bx, by, gx, gy) {
