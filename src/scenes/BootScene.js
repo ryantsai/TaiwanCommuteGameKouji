@@ -21,6 +21,9 @@ import sportsUrl from '../assets/images/sports_red.png';
 import trafficLightUrl from '../assets/images/traffic_light.png';
 import barrierUrl from '../assets/images/barrier.png';
 
+// 圖磚表
+import tilemapUrl from '../assets/images/tilemap_packed.png';
+
 // 爆炸動畫
 import exp0 from '../assets/images/pixelExplosion00.png';
 import exp1 from '../assets/images/pixelExplosion01.png';
@@ -45,6 +48,8 @@ import sfxBoostUrl from '../assets/audio/sfx_boost.ogg';
 import sfxHonkUrl from '../assets/audio/sfx_honk.ogg';
 import sfxGameoverUrl from '../assets/audio/sfx_gameover.ogg';
 
+import { VEHICLES } from '../TileData.js';
+
 export default class BootScene extends Phaser.Scene {
   constructor() { super('BootScene'); }
 
@@ -63,6 +68,11 @@ export default class BootScene extends Phaser.Scene {
       bar.strokeRect(w / 2 - 150, h / 2, 300, 20);
     });
     this.load.on('complete', () => { bar.destroy(); loadText.destroy(); });
+
+    // 圖磚表（8×8 spritesheet）
+    this.load.spritesheet('cityTiles', tilemapUrl, {
+      frameWidth: 8, frameHeight: 8,
+    });
 
     // 角色
     this.load.image('bikeReal', bikeUrl);
@@ -110,68 +120,8 @@ export default class BootScene extends Phaser.Scene {
   create() {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 
-    // 草地 - 更豐富的顏色
-    g.fillStyle(0x4a8f3a, 1); g.fillRect(0, 0, 64, 64);
-    // 加點草紋理細節
-    g.fillStyle(0x3d7a30, 0.5);
-    for (let i = 0; i < 8; i++) {
-      const rx = Math.floor(Math.random() * 60);
-      const ry = Math.floor(Math.random() * 60);
-      g.fillRect(rx, ry, 2, 4);
-    }
-    g.generateTexture('grass', 64, 64); g.clear();
-
-    // 道路 - 乾淨柏油路面 + 內部車道線
-    // 垂直道路
-    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
-    // 微妙路面紋理
-    g.fillStyle(0x4a4a53, 0.3); g.fillRect(2, 0, 28, 64); g.fillRect(34, 0, 28, 64);
-    // 中央黃色虛線
-    g.lineStyle(2, 0xfef08a, 0.6);
-    g.lineBetween(32, 2, 32, 18); g.lineBetween(32, 26, 32, 42); g.lineBetween(32, 50, 32, 62);
-    g.generateTexture('road-v', 64, 64); g.clear();
-
-    // 水平道路
-    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x4a4a53, 0.3); g.fillRect(0, 2, 64, 28); g.fillRect(0, 34, 64, 28);
-    g.lineStyle(2, 0xfef08a, 0.6);
-    g.lineBetween(2, 32, 18, 32); g.lineBetween(26, 32, 42, 32); g.lineBetween(50, 32, 62, 32);
-    g.generateTexture('road-h', 64, 64); g.clear();
-
-    // 十字路口
-    g.fillStyle(0x44444d, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x4a4a53, 0.2); g.fillRect(4, 4, 56, 56);
-    g.generateTexture('road-x', 64, 64); g.clear();
-
-    // 護城河水面紋理
-    g.fillStyle(0x1e6091, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x2980b9, 0.5); g.fillRect(4, 8, 56, 12); g.fillRect(8, 32, 48, 10); g.fillRect(4, 50, 56, 8);
-    g.fillStyle(0x5dade2, 0.3); g.fillRect(10, 12, 20, 4); g.fillRect(30, 40, 24, 4);
-    g.generateTexture('water', 64, 64); g.clear();
-
-    // 河岸（水邊的石頭路）
-    g.fillStyle(0x7f8c8d, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0x95a5a6, 0.6); g.fillRect(4, 4, 24, 24); g.fillRect(36, 36, 24, 24);
-    g.fillStyle(0x566573, 0.4); g.fillRect(32, 4, 28, 20); g.fillRect(4, 40, 28, 20);
-    g.generateTexture('riverbank', 64, 64); g.clear();
-
-    // 建築物 - 多種顏色
-    const buildColors = [
-      { wall: 0x64748b, roof: 0x94a3b8 },
-      { wall: 0x7c5e3c, roof: 0xa47b52 },
-      { wall: 0x4a6741, roof: 0x6b8f60 },
-      { wall: 0x8b4513, roof: 0xcd853f },
-      { wall: 0x5b3a6b, roof: 0x8b6aae },
-    ];
-    buildColors.forEach((c, i) => {
-      g.fillStyle(c.wall, 1); g.fillRect(0, 0, 64, 64);
-      g.fillStyle(c.roof, 1); g.fillRect(6, 6, 52, 52);
-      // 窗戶
-      g.fillStyle(0xfef08a, 0.8);
-      g.fillRect(14, 14, 8, 8); g.fillRect(42, 14, 8, 8);
-      g.fillRect(14, 42, 8, 8); g.fillRect(42, 42, 8, 8);
-      g.generateTexture(`building${i}`, 64, 64); g.clear();
-    });
+    // 用圖磚組合 NPC 車輛精靈紋理
+    this._buildVehicleTextures();
 
     // 金幣
     g.fillStyle(0xfbbf24, 1); g.fillCircle(8, 8, 7);
@@ -201,31 +151,25 @@ export default class BootScene extends Phaser.Scene {
     g.fillStyle(0xff6b35, 1); g.fillRect(0, 0, 4, 4);
     g.generateTexture('spark', 4, 4); g.clear();
 
-    // 人行道
-    g.fillStyle(0x9ca3af, 1); g.fillRect(0, 0, 64, 64);
-    g.fillStyle(0xd1d5db, 0.3);
-    g.fillRect(0, 0, 32, 32); g.fillRect(32, 32, 32, 32);
-    g.generateTexture('sidewalk', 64, 64); g.clear();
-
     // ===== POI 建築物紋理 =====
     // 城隍廟（紅色廟宇風格）
     g.fillStyle(0x8b1a1a, 1); g.fillRect(0, 0, 48, 48);
-    g.fillStyle(0xdc2626, 1); g.fillRect(4, 0, 40, 8); // 紅色屋頂
-    g.fillStyle(0xfbbf24, 1); g.fillRect(4, 2, 40, 3); // 金色屋簷
+    g.fillStyle(0xdc2626, 1); g.fillRect(4, 0, 40, 8);
+    g.fillStyle(0xfbbf24, 1); g.fillRect(4, 2, 40, 3);
     g.fillStyle(0xb91c1c, 1); g.fillRect(6, 10, 36, 34);
     g.fillStyle(0xfef08a, 0.9);
-    g.fillRect(12, 14, 8, 10); g.fillRect(28, 14, 8, 10); // 窗
-    g.fillStyle(0x7c2d12, 1); g.fillRect(20, 28, 8, 20); // 大門
+    g.fillRect(12, 14, 8, 10); g.fillRect(28, 14, 8, 10);
+    g.fillStyle(0x7c2d12, 1); g.fillRect(20, 28, 8, 20);
     g.generateTexture('poiTemple', 48, 48); g.clear();
 
     // 新竹車站（灰白色歐風車站）
     g.fillStyle(0x64748b, 1); g.fillRect(0, 0, 48, 48);
     g.fillStyle(0xe2e8f0, 1); g.fillRect(4, 6, 40, 38);
-    g.fillStyle(0x475569, 1); g.fillRect(4, 0, 40, 8); // 屋頂
-    g.fillStyle(0x334155, 1); g.fillRect(16, 2, 16, 4); // 鐘塔
+    g.fillStyle(0x475569, 1); g.fillRect(4, 0, 40, 8);
+    g.fillStyle(0x334155, 1); g.fillRect(16, 2, 16, 4);
     g.fillStyle(0x93c5fd, 0.8);
     g.fillRect(8, 12, 6, 8); g.fillRect(18, 12, 6, 8); g.fillRect(28, 12, 6, 8); g.fillRect(38, 12, 6, 8);
-    g.fillStyle(0x475569, 1); g.fillRect(18, 30, 12, 18); // 大門
+    g.fillStyle(0x475569, 1); g.fillRect(18, 30, 12, 18);
     g.generateTexture('poiStation', 48, 48); g.clear();
 
     // 巨城 Big City（現代商場）
@@ -234,41 +178,35 @@ export default class BootScene extends Phaser.Scene {
     g.fillStyle(0x93c5fd, 0.6);
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 4; col++) {
-        g.fillRect(4 + col * 11, 4 + row * 11, 8, 8); // 玻璃帷幕
+        g.fillRect(4 + col * 11, 4 + row * 11, 8, 8);
       }
     }
-    g.fillStyle(0x22c55e, 1); g.fillRect(16, 38, 16, 10); // 入口
+    g.fillStyle(0x22c55e, 1); g.fillRect(16, 38, 16, 10);
     g.generateTexture('poiMall', 48, 48); g.clear();
 
     // 清華大學（校門風格）
     g.fillStyle(0x4a6741, 1); g.fillRect(0, 0, 48, 48);
     g.fillStyle(0x6b8f60, 1); g.fillRect(2, 2, 44, 44);
-    g.fillStyle(0x8b5cf6, 1); g.fillRect(10, 8, 28, 20); // 主樓
+    g.fillStyle(0x8b5cf6, 1); g.fillRect(10, 8, 28, 20);
     g.fillStyle(0xfef08a, 0.8);
     g.fillRect(14, 12, 6, 6); g.fillRect(28, 12, 6, 6);
-    g.fillStyle(0xffffff, 1); g.fillRect(16, 34, 16, 2); // 校門欄杆
-    g.fillRect(10, 32, 4, 6); g.fillRect(34, 32, 4, 6); // 門柱
+    g.fillStyle(0xffffff, 1); g.fillRect(16, 34, 16, 2);
+    g.fillRect(10, 32, 4, 6); g.fillRect(34, 32, 4, 6);
     g.generateTexture('poiUniversity', 48, 48); g.clear();
 
     // 科學園區公司（現代辦公大樓）
     g.fillStyle(0x334155, 1); g.fillRect(0, 0, 48, 48);
     g.fillStyle(0x475569, 1); g.fillRect(3, 3, 42, 42);
-    // 玻璃窗格
     g.fillStyle(0x93c5fd, 0.7);
     for (let row = 0; row < 5; row++) {
       for (let col = 0; col < 5; col++) {
         g.fillRect(5 + col * 8, 5 + row * 8, 6, 5);
       }
     }
-    // 公司招牌
     g.fillStyle(0x22c55e, 1); g.fillRect(10, 42, 28, 6);
     g.generateTexture('poiOffice', 48, 48); g.clear();
 
-    // 樹木（裝飾用）
-    g.fillStyle(0x5b3a1a, 1); g.fillRect(6, 10, 4, 6); // 樹幹
-    g.fillStyle(0x2d6a1e, 1); g.fillCircle(8, 6, 7);
-    g.fillStyle(0x3d8a2e, 0.7); g.fillCircle(6, 4, 4);
-    g.generateTexture('tree', 16, 16); g.clear();
+    g.destroy();
 
     // 爆炸動畫
     this.anims.create({
@@ -279,5 +217,37 @@ export default class BootScene extends Phaser.Scene {
     });
 
     this.scene.start('WorldScene');
+  }
+
+  _buildVehicleTextures() {
+    // 水平車輛：16×8px（2 tiles 橫排）
+    const hVehicles = {
+      tileCarRedH: VEHICLES.H_RED,
+      tileCarGreenH: VEHICLES.H_GREEN,
+      tileCarYellowH: VEHICLES.H_YELLOW,
+      tileBusH: VEHICLES.H_BUS,
+    };
+    for (const [name, frames] of Object.entries(hVehicles)) {
+      const rt = this.make.renderTexture({ width: 16, height: 8, add: false });
+      rt.drawFrame('cityTiles', frames[0], 0, 0);
+      rt.drawFrame('cityTiles', frames[1], 8, 0);
+      rt.saveTexture(name);
+      rt.destroy();
+    }
+
+    // 垂直車輛：8×16px（2 tiles 直排）
+    const vVehicles = {
+      tileCarBlueV: VEHICLES.V_BLUE,
+      tileCarRedV: VEHICLES.V_RED,
+      tileCarRed2V: VEHICLES.V_RED2,
+      tileTruckV: VEHICLES.V_TRUCK,
+    };
+    for (const [name, frames] of Object.entries(vVehicles)) {
+      const rt = this.make.renderTexture({ width: 8, height: 16, add: false });
+      rt.drawFrame('cityTiles', frames[0], 0, 0);
+      rt.drawFrame('cityTiles', frames[1], 0, 8);
+      rt.saveTexture(name);
+      rt.destroy();
+    }
   }
 }

@@ -1,12 +1,24 @@
 import Phaser from 'phaser';
+import { GRASS, GROUND, SIDEWALK, ROAD, WATER, BUILDINGS, TREES, LAMP } from '../TileData.js';
 
 const TILE = 64;
+const SUBTILE = 8; // 每個圖磚 8px
+const CELLS = 8;   // 每個遊戲格 = 8×8 個圖磚
+
 // 台灣街頭：大量機車 + 各種車輛
-const NPC_TYPES = [
-  'scooter', 'scooter', 'scooter', 'scooter', 'scooter',  // 機車佔多數（台灣特色）
-  'npcTaxi', 'npcPolice', 'npcSedan', 'npcRed', 'npcGreen',
-  'npcBus', 'npcTruck', 'npcSports', 'npcAmbulance',
+// 保留原始 PNG 車輛 + 新增圖磚車輛
+const NPC_TYPES_H = [
+  'scooter', 'scooter', 'scooter',
+  'tileCarRedH', 'tileCarGreenH', 'tileCarYellowH', 'tileBusH',
+  'npcTaxi', 'npcSedan', 'npcRed', 'npcGreen', 'npcBus',
 ];
+const NPC_TYPES_V = [
+  'scooter', 'scooter', 'scooter',
+  'tileCarBlueV', 'tileCarRedV', 'tileCarRed2V', 'tileTruckV',
+  'npcPolice', 'npcTruck', 'npcSports', 'npcAmbulance',
+];
+const TILE_H_VEHICLES = new Set(['tileCarRedH', 'tileCarGreenH', 'tileCarYellowH', 'tileBusH']);
+const TILE_V_VEHICLES = new Set(['tileCarBlueV', 'tileCarRedV', 'tileCarRed2V', 'tileTruckV']);
 
 // ===== 台灣城市關卡定義 =====
 // 根據真實新竹市古蹟地圖重新設計
@@ -611,56 +623,129 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   buildMap() {
-    this.add.tileSprite(0, 0, this.MAP_W * TILE, this.MAP_H * TILE, 'grass').setOrigin(0);
     this.blockers = this.physics.add.staticGroup();
     this.interactives = this.physics.add.staticGroup();
 
-    // 繪製道路和環境
-    for (let y = 0; y < this.MAP_H; y++) {
-      for (let x = 0; x < this.MAP_W; x++) {
-        const cx = x * TILE + TILE / 2;
-        const cy = y * TILE + TILE / 2;
-        const onRoad = this.isRoad(x, y);
+    // 建立 Phaser Tilemap（每個遊戲格 = 8×8 圖磚）
+    const tw = this.MAP_W * CELLS;
+    const th = this.MAP_H * CELLS;
+    const map = this.make.tilemap({
+      tileWidth: SUBTILE, tileHeight: SUBTILE,
+      width: tw, height: th,
+    });
+    const tileset = map.addTilesetImage('cityTiles', 'cityTiles', SUBTILE, SUBTILE);
+    const terrainLayer = map.createBlankLayer('terrain', tileset);
+    const buildingLayer = map.createBlankLayer('buildings', tileset);
+    const objectLayer = map.createBlankLayer('objects', tileset);
 
-        if (onRoad) {
-          // 判斷是十字路口、垂直還是水平路
-          const hasH = this.isRoad(x - 1, y) || this.isRoad(x + 1, y);
-          const hasV = this.isRoad(x, y - 1) || this.isRoad(x, y + 1);
-          if (hasH && hasV) {
-            this.add.image(cx, cy, 'road-x');
-          } else if (hasV) {
-            this.add.image(cx, cy, 'road-v');
-          } else {
-            this.add.image(cx, cy, 'road-h');
-          }
+    terrainLayer.setDepth(0);
+    buildingLayer.setDepth(1);
+    objectLayer.setDepth(2);
+
+    // 1) 填充草地底色
+    for (let ty = 0; ty < th; ty++) {
+      for (let tx = 0; tx < tw; tx++) {
+        const variant = ((tx * 7 + ty * 13) % 17 === 0) ? GRASS[1]
+                      : ((tx * 11 + ty * 3) % 23 === 0) ? GRASS[2]
+                      : GRASS[0];
+        terrainLayer.putTileAt(variant, tx, ty);
+      }
+    }
+
+    // 2) 填充道路
+    for (let gy = 0; gy < this.MAP_H; gy++) {
+      for (let gx = 0; gx < this.MAP_W; gx++) {
+        if (!this.isRoad(gx, gy)) continue;
+        const bx = gx * CELLS;
+        const by = gy * CELLS;
+        const hasL = this.isRoad(gx - 1, gy);
+        const hasR = this.isRoad(gx + 1, gy);
+        const hasU = this.isRoad(gx, gy - 1);
+        const hasD = this.isRoad(gx, gy + 1);
+        const hasH = hasL || hasR;
+        const hasV = hasU || hasD;
+
+        if (hasH && hasV) {
+          // 十字路口
+          this._fillCrossroad(terrainLayer, bx, by, hasL, hasR, hasU, hasD);
+        } else if (hasV) {
+          this._fillVerticalRoad(terrainLayer, bx, by);
         } else {
-          // 路旁人行道
-          const nearRoad = this.isRoad(x - 1, y) || this.isRoad(x + 1, y) ||
-                           this.isRoad(x, y - 1) || this.isRoad(x, y + 1);
-          if (nearRoad) {
-            this.add.image(cx, cy, 'sidewalk').setAlpha(0.7);
-          }
-
-          // 路旁加樹木裝飾
-          if (nearRoad) {
-            const treeHash = (x * 13 + y * 7) % 9;
-            if (treeHash === 0) {
-              this.add.image(cx, cy, 'tree').setScale(3).setDepth(2).setAlpha(0.9);
-            }
-          }
-
-          // 建築物（不在路邊）
-          if (!nearRoad && x > 0 && x < this.MAP_W - 1 && y > 0 && y < this.MAP_H - 1) {
-            const hash = (x * 31 + y * 17) % 7;
-            if (hash === 0 || hash === 3) {
-              const bType = (x * 7 + y * 13) % 5;
-              const b = this.add.image(cx, cy, `building${bType}`);
-              this.blockers.add(b);
-            }
-          }
+          this._fillHorizontalRoad(terrainLayer, bx, by);
         }
       }
     }
+
+    // 3) 填充人行道
+    for (let gy = 0; gy < this.MAP_H; gy++) {
+      for (let gx = 0; gx < this.MAP_W; gx++) {
+        if (this.isRoad(gx, gy)) continue;
+        const nearRoad = this.isRoad(gx - 1, gy) || this.isRoad(gx + 1, gy) ||
+                         this.isRoad(gx, gy - 1) || this.isRoad(gx, gy + 1);
+        if (!nearRoad) continue;
+        const bx = gx * CELLS;
+        const by = gy * CELLS;
+        this._fillSidewalk(terrainLayer, bx, by, gx, gy);
+      }
+    }
+
+    // 4) 填充建築物
+    for (let gy = 0; gy < this.MAP_H; gy++) {
+      for (let gx = 0; gx < this.MAP_W; gx++) {
+        if (this.isRoad(gx, gy)) continue;
+        const nearRoad = this.isRoad(gx - 1, gy) || this.isRoad(gx + 1, gy) ||
+                         this.isRoad(gx, gy - 1) || this.isRoad(gx, gy + 1);
+        if (nearRoad) continue;
+        if (gx <= 0 || gx >= this.MAP_W - 1 || gy <= 0 || gy >= this.MAP_H - 1) continue;
+        const hash = (gx * 31 + gy * 17) % 7;
+        if (hash !== 0 && hash !== 3) continue;
+
+        const bx = gx * CELLS;
+        const by = gy * CELLS;
+        const bIdx = (gx * 7 + gy * 13) % BUILDINGS.length;
+        const tmpl = BUILDINGS[bIdx];
+        // 居中放置建築
+        const offX = Math.floor((CELLS - tmpl.w) / 2);
+        const offY = Math.floor((CELLS - tmpl.h) / 2);
+        for (let r = 0; r < tmpl.h; r++) {
+          for (let c = 0; c < tmpl.w; c++) {
+            buildingLayer.putTileAt(tmpl.tiles[r][c], bx + offX + c, by + offY + r);
+          }
+        }
+        // 碰撞用方塊（仍然 64px 基準）
+        const cx = gx * TILE + TILE / 2;
+        const cy = gy * TILE + TILE / 2;
+        const block = this.add.rectangle(cx, cy, TILE, TILE, 0x000000, 0);
+        this.blockers.add(block);
+      }
+    }
+
+    // 5) 裝飾（樹木、路燈）
+    for (let gy = 0; gy < this.MAP_H; gy++) {
+      for (let gx = 0; gx < this.MAP_W; gx++) {
+        if (this.isRoad(gx, gy)) continue;
+        const nearRoad = this.isRoad(gx - 1, gy) || this.isRoad(gx + 1, gy) ||
+                         this.isRoad(gx, gy - 1) || this.isRoad(gx, gy + 1);
+        const bx = gx * CELLS;
+        const by = gy * CELLS;
+        const treeHash = (gx * 13 + gy * 7) % 9;
+
+        if (nearRoad && treeHash === 0) {
+          // 棕櫚樹（2 tile 高）
+          objectLayer.putTileAt(TREES.PALM_TOP, bx + 3, by + 2);
+          objectLayer.putTileAt(TREES.PALM_BOT, bx + 3, by + 3);
+        } else if (nearRoad && treeHash === 3) {
+          // 路燈
+          objectLayer.putTileAt(LAMP.TOP, bx + 4, by + 3);
+          objectLayer.putTileAt(LAMP.BOT, bx + 4, by + 4);
+        } else if (!nearRoad && treeHash === 1) {
+          // 圓形樹（空地）
+          objectLayer.putTileAt(TREES.ROUND, bx + 4, by + 4);
+        }
+      }
+    }
+
+    this.tileMap = map;
 
     // 在主要路口放紅綠燈
     this.placeTrafficLights();
@@ -676,6 +761,90 @@ export default class WorldScene extends Phaser.Scene {
       this.poiKeys.push(p.key);
     }
     Object.values(this.poi).forEach((p) => this.interactives.add(p.sprite));
+  }
+
+  // ===== 道路圖磚填充輔助方法 =====
+
+  _fillVerticalRoad(layer, bx, by) {
+    // 垂直道路：左緣 + 6列中央 + 右緣
+    for (let r = 0; r < CELLS; r++) {
+      layer.putTileAt(ROAD.V_LEFT, bx, by + r);
+      for (let c = 1; c < CELLS - 1; c++) {
+        layer.putTileAt(ROAD.V_MID, bx + c, by + r);
+      }
+      layer.putTileAt(ROAD.V_RIGHT, bx + CELLS - 1, by + r);
+    }
+  }
+
+  _fillHorizontalRoad(layer, bx, by) {
+    // 水平道路：上緣 + 6列中央 + 下緣
+    for (let c = 0; c < CELLS; c++) {
+      layer.putTileAt(ROAD.H_TOP, bx + c, by);
+      for (let r = 1; r < CELLS - 1; r++) {
+        layer.putTileAt(ROAD.H_MID, bx + c, by + r);
+      }
+      layer.putTileAt(ROAD.H_BOT, bx + c, by + CELLS - 1);
+    }
+  }
+
+  _fillCrossroad(layer, bx, by, hasL, hasR, hasU, hasD) {
+    // 路口：先填滿中央瀝青
+    for (let r = 0; r < CELLS; r++) {
+      for (let c = 0; c < CELLS; c++) {
+        layer.putTileAt(ROAD.H_MID, bx + c, by + r);
+      }
+    }
+    // 上緣
+    if (!hasU) {
+      for (let c = 0; c < CELLS; c++) layer.putTileAt(ROAD.H_TOP, bx + c, by);
+    }
+    // 下緣
+    if (!hasD) {
+      for (let c = 0; c < CELLS; c++) layer.putTileAt(ROAD.H_BOT, bx + c, by + CELLS - 1);
+    }
+    // 左緣
+    if (!hasL) {
+      for (let r = 0; r < CELLS; r++) layer.putTileAt(ROAD.V_LEFT, bx, by + r);
+    }
+    // 右緣
+    if (!hasR) {
+      for (let r = 0; r < CELLS; r++) layer.putTileAt(ROAD.V_RIGHT, bx + CELLS - 1, by + r);
+    }
+    // 角落
+    if (!hasU && !hasL) layer.putTileAt(ROAD.CROSS_TL, bx, by);
+    if (!hasU && !hasR) layer.putTileAt(ROAD.CROSS_TR, bx + CELLS - 1, by);
+    if (!hasD && !hasL) layer.putTileAt(ROAD.CROSS_BL, bx, by + CELLS - 1);
+    if (!hasD && !hasR) layer.putTileAt(ROAD.CROSS_BR, bx + CELLS - 1, by + CELLS - 1);
+  }
+
+  _fillSidewalk(layer, bx, by, gx, gy) {
+    const rL = this.isRoad(gx - 1, gy);
+    const rR = this.isRoad(gx + 1, gy);
+    const rU = this.isRoad(gx, gy - 1);
+    const rD = this.isRoad(gx, gy + 1);
+
+    for (let r = 0; r < CELLS; r++) {
+      for (let c = 0; c < CELLS; c++) {
+        const isTop = r === 0;
+        const isBot = r === CELLS - 1;
+        const isLeft = c === 0;
+        const isRight = c === CELLS - 1;
+
+        let tile = SIDEWALK.MID;
+        // 邊緣
+        if (isTop && rU) tile = SIDEWALK.TOP;
+        else if (isBot && rD) tile = SIDEWALK.BOT;
+        else if (isLeft && rL) tile = SIDEWALK.LEFT;
+        else if (isRight && rR) tile = SIDEWALK.RIGHT;
+        // 角落
+        if (isTop && isLeft && rU && rL) tile = SIDEWALK.TL;
+        else if (isTop && isRight && rU && rR) tile = SIDEWALK.TR;
+        else if (isBot && isLeft && rD && rL) tile = SIDEWALK.BL;
+        else if (isBot && isRight && rD && rR) tile = SIDEWALK.BR;
+
+        layer.putTileAt(tile, bx + c, by + r);
+      }
+    }
   }
 
   placeTrafficLights() {
@@ -749,18 +918,40 @@ export default class WorldScene extends Phaser.Scene {
     // 護城河
     const moat = this.level.moat || [];
     this.moatSet = new Set();
+    const moatPositions = new Set(moat.map(m => `${m.x},${m.y}`));
     for (const m of moat) {
       const cx = m.x * TILE + TILE / 2;
       const cy = m.y * TILE + TILE / 2;
       this.moatSet.add(`${m.x},${m.y}`);
-      // 水面
-      this.add.image(cx, cy, 'water').setDepth(1);
-      // 兩側河岸
-      if (!this.isRoad(m.x - 1, m.y) && !moat.some(o => o.x === m.x - 1 && o.y === m.y)) {
-        this.add.image((m.x - 1) * TILE + TILE / 2, cy, 'riverbank').setAlpha(0.6).setDepth(1);
+      // 用圖磚填水面（加點變化）
+      const bx = m.x * CELLS;
+      const by = m.y * CELLS;
+      const terrainLayer = this.tileMap.getLayer('terrain').tilemapLayer;
+      const waterTiles = [WATER.FULL, WATER.ALT1, WATER.ALT2];
+      for (let r = 0; r < CELLS; r++) {
+        for (let c = 0; c < CELLS; c++) {
+          const wIdx = ((bx + c) * 3 + (by + r) * 7) % 5 === 0 ? waterTiles[1]
+                     : ((bx + c) * 11 + (by + r) * 5) % 7 === 0 ? waterTiles[2]
+                     : waterTiles[0];
+          terrainLayer.putTileAt(wIdx, bx + c, by + r);
+        }
       }
-      if (!this.isRoad(m.x + 1, m.y) && !moat.some(o => o.x === m.x + 1 && o.y === m.y)) {
-        this.add.image((m.x + 1) * TILE + TILE / 2, cy, 'riverbank').setAlpha(0.6).setDepth(1);
+      // 兩側河岸用人行道磚
+      if (!this.isRoad(m.x - 1, m.y) && !moatPositions.has(`${m.x - 1},${m.y}`)) {
+        const rbx = (m.x - 1) * CELLS;
+        for (let r = 0; r < CELLS; r++) {
+          for (let c = 0; c < CELLS; c++) {
+            terrainLayer.putTileAt(SIDEWALK.MID, rbx + c, by + r);
+          }
+        }
+      }
+      if (!this.isRoad(m.x + 1, m.y) && !moatPositions.has(`${m.x + 1},${m.y}`)) {
+        const rbx = (m.x + 1) * CELLS;
+        for (let r = 0; r < CELLS; r++) {
+          for (let c = 0; c < CELLS; c++) {
+            terrainLayer.putTileAt(SIDEWALK.MID, rbx + c, by + r);
+          }
+        }
       }
       // 護城河是障礙物（不能騎過去）
       const block = this.add.rectangle(cx, cy, TILE, TILE, 0x000000, 0).setDepth(0);
@@ -851,43 +1042,50 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   spawnOneNPC() {
-    const type = NPC_TYPES[Phaser.Math.Between(0, NPC_TYPES.length - 1)];
     const horizontal = Math.random() > 0.5;
-    let x, y, vx, vy, flipX, angle;
+    let x, y, vx, vy, flipX, angle, type;
 
     if (horizontal && this.hLanes.length > 0) {
+      type = NPC_TYPES_H[Phaser.Math.Between(0, NPC_TYPES_H.length - 1)];
       const lane = this.hLanes[Phaser.Math.Between(0, this.hLanes.length - 1)];
       const goRight = lane.y % 2 === 0;
-      // 永遠從地圖邊緣生成，不管車道實際起終點
       x = goRight ? -80 : (this.MAP_W * TILE + 80);
       y = lane.y * TILE + TILE / 2;
       const speed = Phaser.Math.Between(80, 170);
       vx = goRight ? speed : -speed;
       vy = 0;
-      flipX = !goRight;
+      // 圖磚車輛已有方向，用 flipX 處理反向
+      flipX = TILE_H_VEHICLES.has(type) ? !goRight : !goRight;
       angle = 0;
     } else if (this.vLanes.length > 0) {
+      type = NPC_TYPES_V[Phaser.Math.Between(0, NPC_TYPES_V.length - 1)];
       const lane = this.vLanes[Phaser.Math.Between(0, this.vLanes.length - 1)];
       const goDown = lane.x % 2 === 0;
       x = lane.x * TILE + TILE / 2;
-      // 永遠從地圖邊緣生成
       y = goDown ? -80 : (this.MAP_H * TILE + 80);
       const speed = Phaser.Math.Between(80, 170);
       vx = 0;
       vy = goDown ? speed : -speed;
       flipX = false;
-      angle = goDown ? 90 : -90;
+      // 圖磚垂直車輛不需要旋轉（已經是垂直的）
+      angle = TILE_V_VEHICLES.has(type) ? 0 : (goDown ? 90 : -90);
+      if (TILE_V_VEHICLES.has(type) && !goDown) {
+        flipX = false; // 用 flipY 處理上行
+      }
     } else {
       return;
     }
 
     const car = this.npcCars.create(x, y, type);
     const isScooter = type === 'scooter';
-    const bigTypes = ['npcBus', 'npcTruck', 'npcAmbulance'];
+    const isTileVehicle = TILE_H_VEHICLES.has(type) || TILE_V_VEHICLES.has(type);
+    const bigTypes = ['npcBus', 'npcTruck', 'npcAmbulance', 'tileBusH', 'tileTruckV'];
     let scale;
-    if (isScooter) {
+    if (isTileVehicle) {
+      // 圖磚車輛很小（16×8 或 8×16），需放大
+      scale = bigTypes.includes(type) ? 4.0 : 3.5;
+    } else if (isScooter) {
       scale = 2.5;
-      // 機車速度更快、更靈活
       vx *= Phaser.Math.FloatBetween(1.1, 1.5);
       vy *= Phaser.Math.FloatBetween(1.1, 1.5);
     } else if (bigTypes.includes(type)) {
@@ -896,12 +1094,15 @@ export default class WorldScene extends Phaser.Scene {
       scale = 2.2;
     }
     car.setScale(scale).setAngle(angle).setFlipX(flipX).setDepth(4);
+    // 垂直圖磚車輛上行時 flipY
+    if (TILE_V_VEHICLES.has(type) && vy < 0) {
+      car.setFlipY(true);
+    }
     car.body.setAllowGravity(false);
     car.setVelocity(vx, vy);
     car.body.setSize(car.width * 0.7, car.height * 0.7);
     car.body.setImmovable(true);
     car.body.pushable = false;
-    // 儲存原始速度（紅燈停車後恢復用）
     car.setData('origVx', vx);
     car.setData('origVy', vy);
     car.setData('horizontal', horizontal);
